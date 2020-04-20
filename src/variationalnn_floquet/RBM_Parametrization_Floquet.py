@@ -103,7 +103,7 @@ for i in epochs:
 
 ########## FULL TRAINING  ################
 optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
-N = 128
+N = 512
 epochs = range(N)
 loss_list = tf.Variable([],dtype=tf.float64)
 for i in epochs:
@@ -136,6 +136,9 @@ print(U_)
 
 print("Floquet respresentation of dressed states: ")    
 #print(tf.abs(UF))
+
+mpl.pyplot.plot(range(model.dim),Model.Rect2Pol(model.U_Floquet)[0],Model.Rect2Pol(UF)[0]+1)
+mpl.pyplot.plot(range(model.dim),Model.Rect2Pol(model.U_Floquet)[1],Model.Rect2Pol(UF)[1]+1)
 
 #print(Model.loss(model))
 #print(Model.grad_fun(model,Model.loss)[0])

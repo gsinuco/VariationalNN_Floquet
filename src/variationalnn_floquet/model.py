@@ -136,7 +136,7 @@ class Model(Hamiltonian,object):
     Hamiltonian.__init__(self,delta,Omega,phase)  
 
     # Initialize the spin value and number of floquet channels
-    self.hidden_n  = 32 # hidden neurons
+    self.hidden_n  = 16 # hidden neurons
     self.hidden_ph = 16  # hidden neurons
         
     # Declaring training variables
@@ -215,13 +215,13 @@ class Model(Hamiltonian,object):
             for i in range(1,self.S+1):        
                 if(self.S==4):
                     if(l!=0): y = [[-i+2.5,j-2.5,1.0/l]]
-                    if(l==0): y = [[-i+2.5,j-2.5,0.0]]
+                    if(l==0): y = [[-i+2.5,j-2.5,1.0]]
                     #if(l!=0): y = [[i-2.5,0,1.0/l]]
                     #if(l==0): y = [[i-2.5,0,l]]
 
                 if(self.S==2):
                     if(l!=0): y = [[-i+1.5,j-1.5,1.0/l]]
-                    if(l==0): y = [[-i+1.5,j-1.5,0.0]]
+                    if(l==0): y = [[-i+1.5,j-1.5,1.0]]
                     #if(l!=0): y = [[i-1.5,0,1.0/l]]
                     #if(l==0): y = [[i-1.5,0,l]]
                 self.x = tf.concat([self.x, y], 0) 
@@ -313,14 +313,6 @@ def FloquetHamiltonian(model):
 
 def Unitary_Matrix(model): 
 
-    #UF_aux   = tf.Variable(np.zeros((model.dim*model.dim), dtype=np.complex64),trainable = False)  # ext. micromotion operator
-
-    #UF_n     = tf.Variable(np.zeros((model.dim,model.dim), dtype=np.complex64),trainable = False)  # ext. micromotion operator
-    #UF_ph    = tf.Variable(np.zeros((model.dim,model.dim), dtype=np.complex64),trainable = False)  # ext. micromotion operator
-    #model.UF  = tf.Variable(np.zeros((model.dim,model.dim), dtype=np.complex64),trainable = False)  # ext. micromotion operator
-
-    
-    # defining the labels of the input layer, which are the components of the UF matrix
     counter = model.count 
 
     #Building of the marginal probability of the RBM using the training parameters and labels of the input layer    
@@ -367,11 +359,11 @@ def Unitary_Matrix(model):
             tf.transpose(tf.reduce_sum(tf.multiply(model.x[1:counter+1],model.b_ph),1))))
     UF_ph = tf.reshape(tf.math.log(UF_aux),[model.dim,model.S])
     
-    UF_cos = 0.0#tf.cos(UF_ph/2.0)
-    UF_sin = 0.0#tf.sin(UF_ph/2.0)
+    UF_cos = tf.cos(UF_ph/2.0)
+    UF_sin = tf.sin(UF_ph/2.0)
 
     
-    UF = tf.dtypes.cast(UF_n,tf.complex128)#tf.complex(UF_n*UF_cos,UF_n*UF_sin)
+    UF =tf.complex(UF_n*UF_cos,UF_n*UF_sin)
     
     
     UF = mp.normalisation(UF)

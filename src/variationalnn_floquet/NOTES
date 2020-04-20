@@ -1,4 +1,14 @@
 20th APRIL 2020
+#
+PLAN:
+1. Make sure that we can parametrise the numerically exact Floquet states. First fit the magnitudes. Then train a RBM or NN to fit the phases.
+
+2. Work along the same lines to parametrise the Floquet states, taking as initial condition the RWA.
+
+
+
+
+20th APRIL 2020
 
 TO FINE TUNE THE PARAMETRISATION OF THE FLOQUET STATES:
 
