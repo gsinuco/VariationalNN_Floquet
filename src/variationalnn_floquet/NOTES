@@ -1,0 +1,51 @@
+20th APRIL 2020
+
+TO FINE TUNE THE PARAMETRISATION OF THE FLOQUET STATES:
+
+The magnitude and phases are parametrised by RBM.
+We train the RBM to fit the RWA and full Floquet.
+The training works well for the magnitudes but not for the phases.
+
+The loss function for the floquet operator is not very sensitity to the values. The off-diagonal elements are ~ 10^-4 - 10^-6, which is not good enough. With the exact Floquet states the off-diagonal elements are ~ 10^-17.
+
+
+
+
+
+17TH MARCH 2020
+
+Because we are thinking of Floquet systems, the micromotion operator has only D^2 x (2N+1) elements:
+
+U = sum_{i,j} sum_{n=-N,N} u_{ij}^{N} e^{i n w t} |i><j|
+
+and we are parametrising the u_{ij}^{N} components, of which we have D^2 x (2 N + 1).
+
+we also have:
+
+<i,n|\bar{i}> = <i,n+p|\bar{i},p>
+
+so, we can build the full matrix that require ((2N+1)xD)^2.
+
+The code produces an array of dimension D^2 x (2 N + 1), and should be transformed in a matrix of dimension Dx(2 N + 1),D, with D columns corresponding to the D dressed states. This is the central part of the micromotion operator.
+
+The sidebands can be created shifting uppwards and downwards the D^2 x (2 N + 1). Leave some sections of the matrix as free parameters, near the boundaries of the Floquet expansion.
+
+
+We replaced 
+
+    self.W_n   = tf.Variable(tf.random.stateless_uniform([self.hidden_n,self.dim*self.dim,3],
+                                                       seed=[1,1],dtype=tf.float32,
+                                                       minval=0.0,maxval=1.0),trainable=True) 
+
+by
+
+    self.W_n   = tf.Variable(tf.random.stateless_uniform([self.hidden_n,self.S*self.dim,3],
+                                                       seed=[1,1],dtype=tf.float32,
+                                                       minval=0.0,maxval=1.0),trainable=True) 
+
+
+1st of April
+Today we started populating the Floquet transformation matrix as explained above.
+
+
+
