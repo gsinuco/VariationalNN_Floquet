@@ -127,7 +127,7 @@ def U_RWA(H):
         
         
 
-class Model(Hamiltonian,object):
+class RBM_Model(Hamiltonian,object):
   
   def __init__(self,delta=0.0,Omega=0.1,phase=0.0):
       
@@ -137,7 +137,7 @@ class Model(Hamiltonian,object):
 
     # Initialize the spin value and number of floquet channels
     self.hidden_n  = 16 # hidden neurons
-    self.hidden_ph = 16  # hidden neurons
+    self.hidden_ph = 32  # hidden neurons
         
     # Declaring training variables
     # Training parameters defining the norm 
@@ -187,7 +187,7 @@ class Model(Hamiltonian,object):
     #                                                  ,trainable=True)
     self.c_n   = tf.Variable(tf.random.stateless_uniform([self.hidden_n],                    
                                                        seed=[1,3],dtype=tf.float64,
-                                                       minval=-10.0,maxval=10.0),trainable=True)
+                                                       minval=-1.0,maxval=1.0),trainable=True)
     
     # Training parameters defining the phase
     #self.W_ph   = tf.Variable(tf.ones([self.hidden_n,self.S*self.dim,3],dtype=tf.float64)
@@ -237,8 +237,8 @@ class Model(Hamiltonian,object):
     zeros_aux  = tf.zeros([self.S*(self.N-1),self.S],dtype=tf.complex128)    
     self.U_RWA = tf.concat([zeros_aux,self.U_RWA,zeros_aux],axis=0)
             
-    #self.trainable_variables = [self.W_n,self.b_n,self.c_n,self.W_ph,self.b_ph,self.c_ph]
-    self.trainable_variables = [self.W_n,self.b_n,self.c_n]
+    self.trainable_variables = [self.W_n,self.b_n,self.c_n,self.W_ph,self.b_ph,self.c_ph]
+    #self.trainable_variables = [self.W_n,self.b_n,self.c_n]
         
   def getH(self):
     return self.H_TLS
@@ -313,6 +313,29 @@ def FloquetHamiltonian(model):
 
 def Unitary_Matrix(model): 
 
+    #counter = model.count 
+
+    #Building of the marginal probability of the RBM using the training parameters and labels of the input layer    
+    #P(x)(b,c,W) = exp(bji . x) Prod_l=1^M 2 x cosh(c_l + W_{x,l} . x)
+    # 1. Amplitude (norm)
+    UF_n     = Unitary_Matrix_Norm(model) 
+    # 2. phase 
+    UF_ph = Unitary_Matrix_Phase(model)     
+    UF_cos = tf.cos(UF_ph/2.0)
+    UF_sin = tf.sin(UF_ph/2.0)    
+    UF =tf.complex(UF_n*UF_cos,UF_n*UF_sin)
+    UF = mp.normalisation(UF)
+    UF = mp.tf_gram_schmidt(UF)
+
+    # G-S algorithm 
+    # reported in  https://stackoverflow.com/questions/48119473/gram-schmidt-orthogonalization-in-pure-tensorflow-performance-for-iterative-sol. 
+    # To do: incorparate a basis rotation in the training loop
+
+    return UF
+
+
+def Unitary_Matrix_Norm(model): 
+
     counter = model.count 
 
     #Building of the marginal probability of the RBM using the training parameters and labels of the input layer    
@@ -335,9 +358,7 @@ def Unitary_Matrix(model):
         for j in range(1,model.hidden_n):
             y = tf.reduce_sum(tf.multiply(model.x[1:int(counter/2)+1],model.W_n[j]),1)+model.c_n[j]
             WX_n = tf.concat([WX_n, [y]], 0) 
-            
-        #WX_n = tf.concat([WX_n,WX_n],1)
-        
+                    
         UF_aux = tf.sqrt(tf.abs(tf.multiply(tf.reduce_prod(tf.math.cosh(WX_n),0),tf.exp(
                                         tf.transpose(tf.reduce_sum(tf.multiply(
                                                 model.x[1:int(0.5*counter)+1],model.b_n),1))))))
@@ -347,9 +368,15 @@ def Unitary_Matrix(model):
         
     UF_n = tf.reshape(UF_aux,[model.dim,model.S])
     
-    
+    return UF_n
+
+
+def Unitary_Matrix_Phase(model): 
+
+    counter = model.count 
+    #Building of the marginal probability of the RBM using the training parameters and labels of the input layer    
+    #P(x)(b,c,W) = exp(bji . x) Prod_l=1^M 2 x cosh(c_l + W_{x,l} . x)
     # 2. Phase 
-    
     WX_ph = [tf.reduce_sum(tf.multiply(model.x[1:counter+1],model.W_ph[0]),1)+model.c_ph[0]]
     for j in range(1,model.hidden_ph):
         y = tf.reduce_sum(tf.multiply(model.x[1:counter+1],model.W_ph[j]),1)+model.c_ph[j]
@@ -359,52 +386,8 @@ def Unitary_Matrix(model):
             tf.transpose(tf.reduce_sum(tf.multiply(model.x[1:counter+1],model.b_ph),1))))
     UF_ph = tf.reshape(tf.math.log(UF_aux),[model.dim,model.S])
     
-    UF_cos = tf.cos(UF_ph/2.0)
-    UF_sin = tf.sin(UF_ph/2.0)
+    return UF_ph
 
-    
-    UF =tf.complex(UF_n*UF_cos,UF_n*UF_sin)
-    
-    
-    UF = mp.normalisation(UF)
-    UF = mp.tf_gram_schmidt(UF)
-
-    #UF = mp.normalisation(UF_n)
-    #UF = mp.tf_gram_schmidt(UF_n)
-
-
-# ===== manipulation of the central floquet UF to form a big Floquet UF
-    # 1st of March 2020. Task: REVISE NORMALISATION AND GRAM-SCHMIDT PROCEDURE FOR COMPLEX VECTORS
-    # 5th of March 2020. Normalisation done by hand: OK. Now I am using the G-S algorithm 
-    #                    reported in  https://stackoverflow.com/questions/48119473/gram-schmidt-orthogonalization-in-pure-tensorflow-performance-for-iterative-sol. 
-    #                    Task: incorparate a basis rotation in the training loop
-    
-
-#    window = tf.concat([tf.ones([model.S*(model.N+1),model.S],tf.complex64),tf.zeros([model.S*(model.N),model.S],tf.complex64)],axis=0)
-    
-#    basis = tf.math.multiply(tf.roll(UF,shift=int(-model.N*model.S),axis=0),window)    
-
-
-#    counter = 1
-#    for i in range(-model.N+1,model.N+1):#vectors.get_shape()[0].value):        
-#        if (i <= 0):
-#            window = tf.concat([tf.ones([model.S*(model.N+1 + counter),model.S],tf.complex64),tf.zeros([model.S*(model.N-counter),model.S],tf.complex64)],axis=0)
-#        if (i>0):   
-#            window = tf.concat([tf.zeros([model.S*(model.N + counter),model.S],tf.complex64),tf.ones([model.S*(model.N+1-counter),model.S],tf.complex64)],axis=0)
-            
-#        UF_ = tf.math.multiply(tf.roll(UF,shift = int(i*model.S), axis=0),window)        
-        # 1st April. This roll is periodic, so it's now useful        
-#        basis = tf.concat([basis, UF_],axis=1)
-#        counter = counter + 1
-#        if (i == 0):    
-#            counter = 0
-
- 
-#    basis = mp.normalisation(basis)
-#    basis = mp.tf_gram_schmidt(basis)    
-#    return basis
-
-    return UF
 
 
 def train(model,learning_rate):
@@ -439,25 +422,25 @@ def loss(model):
     UF = Unitary_Matrix(model)
     #print(tf.abs(tf.matmul(UF,UF,adjoint_a=True)))
     
-    U_ = tf.abs(tf.transpose(tf.math.conj(UF))@model.H_TLS@UF)
+    U_      = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
     #print(U_)
-    U_diag = tf.linalg.tensor_diag_part(U_)  
+    U_diag  = tf.abs(tf.linalg.tensor_diag_part(U_))  
     dotProd = tf.math.reduce_sum(abs(U_),axis=1,)    
     #residual = tf.math.sqrt(tf.math.reduce_sum(tf.pow((U_diag-dotProd),2),0))
     #Residual: defined to minimise the difference between U_ and a diagonal form  + 
     #          
     #residual = tf.math.reduce_sum(tf.abs(U_diag-dotProd),0)
-    residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0)
+    residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0) #+ 0.01*tf.linalg.trace(tf.math.real(U_))
     
     #tf.math.sqrt(tf.math.reduce_sum(tf.abs(U_diag-dotProd),0)) #+ tf.math.reduce_sum(tf.abs(U_diag),0)
     
-    U_ = tf.abs(tf.transpose(tf.math.conj(UF))@UF)
+    #U_ = tf.abs(tf.transpose(tf.math.conj(UF))@UF)
     #print(U_)
-    U_diag = tf.linalg.tensor_diag_part(U_)  
+    #U_diag = tf.linalg.tensor_diag_part(U_)  
 
-    dotProd = tf.math.reduce_sum(abs(U_),axis=1)    
+    #dotProd = tf.math.reduce_sum(abs(U_),axis=1)    
 
-    residual_unitary = tf.pow(tf.math.reduce_sum(dotProd,0) - model.dim,2.0)
+    #residual_unitary = tf.pow(tf.math.reduce_sum(dotProd,0) - model.dim,2.0)
     
     #residual += 7.0*residual_unitary
 
@@ -497,6 +480,48 @@ def loss_RWA(model):
     #loss = k([.4, .9, .2],[.5, .9, .2])
 
 
+def loss_RWA_Phase(model):
+    #print(model.U_RWA)
+    #print(model.UF)
+    k        = tf.keras.losses.KLDivergence()
+    UF       = Unitary_Matrix(model)    
+    U_Target = model.U_RWA
+    UF_      = UF    
+
+    #H_       = tf.math.real(tf.transpose(tf.math.conj(UF))@model.H_TLS@UF)
+    #H_Target = tf.math.real(tf.transpose(tf.math.conj(U_Target))@model.H_TLS@U_Target)
+    #loss_H   = tf.math.reduce_sum(tf.abs(H_ - H_Target)) + tf.abs(tf.linalg.trace(H_))
+    # the first term of loss_H drives an asymmetry of the eigenvalues
+    N = 8 # N random basis
+    loss  = 0.0
+    for i in range(0,N):
+
+        #U_basis_R = tf.random.stateless_uniform(model.H_TLS.shape,seed=[3,6],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        #U_basis_I = tf.random.stateless_uniform(model.H_TLS.shape,seed=[7,3],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        U_basis_R = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
+        U_basis_I = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
+        U_basis   = tf.complex(U_basis_R,U_basis_I)
+        U_basis   = tf.linalg.svd(U_basis)[1]
+    
+        if (N>1):
+            U_Target = U_basis@model.U_Floquet
+            UF_      = U_basis@UF
+        
+        if(model.S==2):
+            loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
+            loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:,1])))
+            loss   = loss + loss_0 + loss_1
+            
+        if(model.S==4):
+            loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
+            loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:, 1])))
+            loss_2 = k(tf.math.square(tf.abs(U_Target[:,2])),tf.math.square(tf.abs(UF_[:, 2])))
+            loss_3 = k(tf.math.square(tf.abs(U_Target[:,3])),tf.math.square(tf.abs(UF_[:,3])))
+            loss   = loss + loss_0 + loss_1 + loss_2 + loss_3
+                
+    return loss/N
+
+
 def loss_Floquet(model):
     #print(model.U_RWA)
     #print(model.UF)
@@ -505,11 +530,59 @@ def loss_Floquet(model):
     U_Target = model.U_Floquet
     UF_      = UF    
     
+    #H_       = tf.math.real(tf.transpose(tf.math.conj(UF))@model.H_TLS@UF)
+    #H_Target = tf.math.real(tf.transpose(tf.math.conj(U_Target))@model.H_TLS@U_Target)
+    #loss_H   = tf.math.reduce_sum(tf.abs(H_ - H_Target))
+
     N = 1 # N random basis
     loss  = 0.0
     for i in range(0,N):
         U_basis_R = tf.random.stateless_uniform(model.H_TLS.shape,seed=[2,1],dtype=tf.float64,minval=-1.0,maxval=1.0)
         U_basis_I = tf.random.stateless_uniform(model.H_TLS.shape,seed=[2,1],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        #U_basis_R = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
+        #U_basis_I = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
+        U_basis   = tf.complex(U_basis_R,U_basis_I)
+        U_basis   = tf.linalg.svd(U_basis)[1]
+    
+        if (N>1):
+            U_Target = U_basis@model.U_Floquet
+            UF_      = U_basis@UF
+        
+        if(model.S==2):
+            loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
+            loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:,1])))
+            loss   = loss + loss_0 + loss_1
+            
+        if(model.S==4):
+            loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
+            loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:, 1])))
+            loss_2 = k(tf.math.square(tf.abs(U_Target[:,2])),tf.math.square(tf.abs(UF_[:, 2])))
+            loss_3 = k(tf.math.square(tf.abs(U_Target[:,3])),tf.math.square(tf.abs(UF_[:,3])))
+            loss   = loss + loss_0 + loss_1 + loss_2 + loss_3
+                
+    return loss/N
+
+
+def loss_Floquet_Phase(model):
+    #print(model.U_RWA)
+    #print(model.UF)
+    k       = tf.keras.losses.KLDivergence()
+    UF      = Unitary_Matrix(model)    
+    U_Target = model.U_Floquet
+    UF_      = UF    
+
+    #H_       = tf.math.real(tf.transpose(tf.math.conj(UF))@model.H_TLS@UF)
+    #H_Target = tf.math.real(tf.transpose(tf.math.conj(U_Target))@model.H_TLS@U_Target)
+    #loss_H   = tf.math.reduce_sum(tf.abs(H_ - H_Target)) + tf.abs(tf.linalg.trace(H_))
+    # the first term of loss_H drives an asymmetry of the eigenvalues
+    N = 8 # N random basis
+    loss  = 0.0
+    for i in range(0,N):
+
+        #U_basis_R = tf.random.stateless_uniform(model.H_TLS.shape,seed=[3,6],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        #U_basis_I = tf.random.stateless_uniform(model.H_TLS.shape,seed=[7,3],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        U_basis_R = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
+        U_basis_I = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
         U_basis   = tf.complex(U_basis_R,U_basis_I)
         U_basis   = tf.linalg.svd(U_basis)[1]
     
@@ -544,6 +617,11 @@ def grad_fun(model,loss_fun):
     loss_value = loss_fun(model)
   return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
+
+def grad_Phase(model,loss_fun):
+  with tf.GradientTape() as tape:
+    loss_value = loss_fun(model)
+  return loss_value, tape.gradient(loss_value, model.trainable_variables[3:6])
     
 
 
@@ -568,9 +646,9 @@ def phase(x):
     #    ph = 0.0
     #if((A==0).all() &(B<0).all()):        
     #    ph = np.pi
-    #if((B==0).all() & (A>0).all()):
+    #if((B==0).all() & (np.sign(A)>0).all()):
     #    ph = 0.0
-    #if((B==0).all() & (A<0).all()):
+    #if((B==0).all() & (np.sign(A)<0).all()):
     #    print("me")
     #    ph = np.pi
 
