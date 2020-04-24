@@ -129,7 +129,8 @@ def U_RWA(H):
 
 class RBM_Model(Hamiltonian,object):
   
-  def __init__(self,delta=0.0,Omega=0.1,phase=0.0):
+  def __init__(self,delta=0.0,Omega=0.1,phase=0.0,BiasWeights=0):
+  #def __init__(self,delta=0.0,Omega=0.1,phase=0.0):
       
     pi = tf.atan(1.0)
     
@@ -138,73 +139,96 @@ class RBM_Model(Hamiltonian,object):
     # Initialize the spin value and number of floquet channels
     self.hidden_n  = 16 # hidden neurons
     self.hidden_ph = 32  # hidden neurons
-        
+
+
+    self.N_Floquet_UF = self.N/2 # Number of Floquet manifolds used to build the micromotion operator
+    
+    if BiasWeights:
     # Declaring training variables
     # Training parameters defining the norm 
     #self.W_n   = tf.Variable(tf.zeros([self.hidden_n,self.S*self.dim,3],dtype=tf.float64)
     #                                                  ,trainable=True) 
-    if (self.spin == False):
-    # When the Hamiltonian does not display any symmetry, the coupling tensor has the form:
-        self.W_n   = tf.Variable(tf.random.stateless_uniform([self.hidden_n,self.S*self.dim,3],
-                                                          seed=[1,2],dtype=tf.float64,
-                                                          minval=-1.0,maxval=1.0),trainable=True) 
-        self.b_n   = tf.Variable(tf.random.stateless_uniform([self.S*self.dim,3], 
-                                                       seed=[2,1],dtype=tf.float64,
-                                                       minval=-1.0,maxval=1.0),trainable=True)
-        
-    # 17th April 2020
-    # in spin systems, the magnitude of the coeficients satisfy P(x) = P(-x)
-    # and we reqiure less parameters. This also modifies the way we build the transformation matrix
-    # def Unitary_Matrix(model)
+        self.W_n  = BiasWeights[0]
+        self.b_n  = BiasWeights[1]
+        self.c_n  = BiasWeights[2]
+        self.W_ph = BiasWeights[3]
+        self.b_ph = BiasWeights[4]
+        self.c_ph = BiasWeights[5]
+
     else:
-        self.W_n   = tf.Variable(tf.random.stateless_uniform([self.hidden_n,int(0.5*self.S*self.dim),3],
-                                                       seed=[1,2],dtype=tf.float64,
-                                                       minval=-1.0,maxval=1.0),trainable=True) 
-        self.b_n   = tf.Variable(tf.random.stateless_uniform([int(0.5*self.S*self.dim),3], 
-                                                       seed=[2,1],dtype=tf.float64,
-                                                       minval=-1.0,maxval=1.0),trainable=True)
-
+        
+        if (self.spin == False):
+            # When the Hamiltonian does not display any symmetry, the coupling tensor has the form:
+            self.W_n   = tf.Variable(tf.random.stateless_uniform([self.hidden_n,self.S*self.dim,3],
+                                                                 seed=[1,2],dtype=tf.float64,
+                                                                 minval=-1.0,maxval=1.0),trainable=True) 
+            self.b_n   = tf.Variable(tf.random.stateless_uniform([self.S*self.dim,3], 
+                                                                 seed=[2,1],dtype=tf.float64,
+                                                                 minval=-1.0,maxval=1.0),trainable=True)
+            
+            # 17th April 2020
+            # in spin systems, the magnitude of the coeficients satisfy P(x) = P(-x)
+            # and we reqiure less parameters. This also modifies the way we build the transformation    matrix
+            # def Unitary_Matrix(model)
+        else:
+            self.W_n   =    tf.Variable(tf.random.stateless_uniform([self.hidden_n,int(0.5*self.S*self.dim),3],
+                                                           seed=[1,2],dtype=tf.float64,
+                                                           minval=-1.0,maxval=1.0),trainable=True) 
+            self.b_n   = tf.Variable(tf.random.stateless_uniform([int(0.5*self.S*self.dim),3], 
+                                                           seed=[2,1],dtype=tf.float64,
+                                                          minval=-1.0,maxval=1.0),trainable=True)
+            #self.W_n   = tf.Variable(tf.random.uniform([self.hidden_n,int(0.5*self.S*self.dim),3],
+            #                                                dtype=tf.float64,
+            #                                                minval=-1.0,maxval=1.0),trainable=True) 
+            #self.b_n   = tf.Variable(tf.random.uniform([int(0.5*self.S*self.dim),3], 
+            #                                                dtype=tf.float64,
+            #                                                minval=-1.0,maxval=1.0),trainable=True)
+                
+            ### ENHANCING THE WEIGHT OF THE CENTRAL MANIFOLD
+            #for i in range(self.S):
+            #    index_aux = self.S*self.N + i*(self.S*(2*self.N+1))
+            #    self.W_n[:,index_aux:index_aux+self.S,:].assign(tf.random.stateless_uniform([self.hidden_n,self.S,3],
+            #                                               seed=[5,2],dtype=tf.float64,
+            #                                               minval=-2.0,maxval=2.0))
+            #    index_aux = self.S*self.N + i*(self.S*(2*self.N+1))
+            #    self.b_n[index_aux:index_aux+self.S,:].assign(tf.random.stateless_uniform([self.S,  3],
+            #                                               seed=[2,7],dtype=tf.float64,
+            #                                               minval=-2.0,maxval=2.0))
+                            
+            #self.c_n   = tf.Variable(tf.zeros([self.hidden_n],dtype=tf.float64)
+            #                                                  ,trainable=True)
+            self.c_n   = tf.Variable(tf.random.stateless_uniform([self.hidden_n],                    
+                                                              seed=[1,3],dtype=tf.float64,
+                                                              minval=-1.0,maxval=1.0),trainable=True)
+            #self.c_n   = tf.Variable(tf.random.uniform([self.hidden_n],                    
+            #                                           dtype=tf.float64,
+            #                                           minval=-1.0,maxval=1.0),trainable=True)
     
-    for i in range(self.S):
-        index_aux = self.S*self.N + i*(self.S*(2*self.N+1))
-        self.W_n[:,index_aux:index_aux+self.S,:].assign(tf.random.stateless_uniform([self.hidden_n,self.S,3],
-                                                       seed=[5,2],dtype=tf.float64,
-                                                      minval=-2.0,maxval=2.0))
-
-   # self.W_n[:,self.S*self.N:self.S*(self.N+1),:].assign(tf.ones([self.hidden_n,self.S,3],dtype=tf.float64)) 
-
-    #self.W_n[0,0,0].assign(1.0)
-    #self.b_n   = tf.Variable(3.0*tf.zeros([self.S*self.dim,3],dtype=tf.float64),
-    #                                                   trainable=True)
-    for i in range(self.S):
-        index_aux = self.S*self.N + i*(self.S*(2*self.N+1))
-        self.b_n[index_aux:index_aux+self.S,:].assign(tf.random.stateless_uniform([self.S,3],
-                                                       seed=[2,7],dtype=tf.float64,
-                                                      minval=-2.0,maxval=2.0))
-    #self.b_n[self.S*self.N:self.S*(self.N+1),:].assign(tf.ones([self.S,3],dtype=tf.float64))
-
-    #self.c_n   = tf.Variable(tf.zeros([self.hidden_n],dtype=tf.float64)
-    #                                                  ,trainable=True)
-    self.c_n   = tf.Variable(tf.random.stateless_uniform([self.hidden_n],                    
-                                                       seed=[1,3],dtype=tf.float64,
-                                                       minval=-1.0,maxval=1.0),trainable=True)
-    
-    # Training parameters defining the phase
-    #self.W_ph   = tf.Variable(tf.ones([self.hidden_n,self.S*self.dim,3],dtype=tf.float64)
-    #                                                  ,trainable=True) 
-    self.W_ph   = tf.Variable(tf.random.stateless_uniform([self.hidden_ph,self.S*self.dim,3],
-                                                       seed=[3,1],dtype=tf.float64,
-                                                       minval=-10.0,maxval=10.0),trainable=True) 
-    #self.b_ph   = tf.Variable(tf.ones([self.S*self.dim,3],dtype=tf.float64)
-    #                                                   ,trainable=True)
-    self.b_ph   = tf.Variable(tf.random.stateless_uniform([self.S*self.dim,3], 
-                                                       seed=[1,1],dtype=tf.float64,
-                                                       minval=-10.0,maxval=10.0),trainable=True)
-    #self.c_ph   = tf.Variable(tf.ones([self.hidden_n],dtype=tf.float64)
-    #                                                  ,trainable=True)
-    self.c_ph   = tf.Variable(tf.random.stateless_uniform([self.hidden_ph],                    
-                                                       seed=[1,1],dtype=tf.float64,
-                                                       minval=-10.0,maxval=10.0),trainable=True)
+            # Training parameters defining the phase
+            #self.W_ph   = tf.Variable(tf.ones([self.hidden_n,self.S*self.dim,3],dtype=tf.float64)
+            #                                                  ,trainable=True) 
+            self.W_ph   = tf.Variable(tf.random.stateless_uniform([self.hidden_ph,self.S*self.dim,3],
+                                                               seed=[3,1],dtype=tf.float64,
+                                                               minval=-10.0,maxval=10.0),trainable=True) 
+            #self.W_ph   = tf.Variable(tf.random.uniform([self.hidden_ph,self.S*self.dim,3],
+            #                                           dtype=tf.float64,
+            #                                           minval=-10.0,maxval=10.0),trainable=True) 
+            #self.b_ph   = tf.Variable(tf.ones([self.S*self.dim,3],dtype=tf.float64)
+            #                                                   ,trainable=True)
+            self.b_ph   = tf.Variable(tf.random.stateless_uniform([self.S*self.dim,3], 
+                                                               seed=[1,1],dtype=tf.float64,
+                                                               minval=-10.0,maxval=10.0),trainable=True)
+            #self.b_ph   = tf.Variable(tf.random.uniform([self.S*self.dim,3], 
+            #                                           dtype=tf.float64,
+            #                                           minval=-10.0,maxval=10.0),trainable=True)
+            #self.c_ph   = tf.Variable(tf.ones([self.hidden_n],dtype=tf.float64)
+            #                                                  ,trainable=True)
+            self.c_ph   = tf.Variable(tf.random.stateless_uniform([self.hidden_ph],                    
+                                                               seed=[1,1],dtype=tf.float64,
+                                                               minval=-10.0,maxval=10.0),trainable=True)
+            #self.c_ph   = tf.Variable(tf.random.uniform([self.hidden_ph],                    
+            #                                           dtype=tf.float64,
+            #                                           minval=-10.0,maxval=10.0),trainable=True)
         
     # defining the labels of the input layer, which are the components of the UF matrix
     self.x = tf.Variable([[0.0,0.0,0.0]],dtype=tf.float64)
@@ -313,14 +337,15 @@ def FloquetHamiltonian(model):
 
 def Unitary_Matrix(model): 
 
-    #counter = model.count 
+    counter = model.count 
 
-    #Building of the marginal probability of the RBM using the training parameters and labels of the input layer    
+    #Building of the marginal probability of the RBM using the training parameters and labels of the input layer, of the central floquet manifold    
     #P(x)(b,c,W) = exp(bji . x) Prod_l=1^M 2 x cosh(c_l + W_{x,l} . x)
     # 1. Amplitude (norm)
     UF_n     = Unitary_Matrix_Norm(model) 
     # 2. phase 
     UF_ph = Unitary_Matrix_Phase(model)     
+    
     UF_cos = tf.cos(UF_ph/2.0)
     UF_sin = tf.sin(UF_ph/2.0)    
     UF =tf.complex(UF_n*UF_cos,UF_n*UF_sin)
@@ -331,7 +356,42 @@ def Unitary_Matrix(model):
     # reported in  https://stackoverflow.com/questions/48119473/gram-schmidt-orthogonalization-in-pure-tensorflow-performance-for-iterative-sol. 
     # To do: incorparate a basis rotation in the training loop
 
-    return UF
+# ===== manipulation of the central floquet UF to form a big Floquet UF
+    # 1st of March 2020. Task: REVISE NORMALISATION AND GRAM-SCHMIDT PROCEDURE FOR COMPLEX VECTORS
+    # 5th of March 2020. Normalisation done by hand: OK. Now I am using the G-S algorithm 
+    #                    reported in  https://stackoverflow.com/questions/48119473/gram-schmidt-orthogonalization-in-pure-tensorflow-performance-for-iterative-sol. 
+    #                    Task: incorparate a basis rotation in the training loop
+    # 23rd April 2020 To find the Floquet spectrum, I will try using more than a single Floquet manifold.
+
+
+
+    window = tf.concat([tf.ones([model.S*(model.N+1),model.S],tf.complex128),tf.zeros([model.S*(model.N),model.S],tf.complex128)],axis=0)
+    
+    basis = tf.math.multiply(tf.roll(UF,shift=int(-model.N*model.S),axis=0),window)    
+  
+    counter = 1
+    for i in range(-model.N+1,model.N+1):#vectors.get_shape()[0].value):        
+        if (i <= 0):
+            window = tf.concat([tf.ones([model.S*(model.N+1 + counter),model.S],tf.complex128),tf.zeros([model.S*(model.N-counter),model.S],tf.complex128)],axis=0)
+        if (i>0):   
+            window = tf.concat([tf.zeros([model.S*(model.N + counter),model.S],tf.complex128),tf.ones([model.S*(model.N+1-counter),model.S],tf.complex128)],axis=0)
+            
+        UF_ = tf.math.multiply(tf.roll(UF,shift = int(i*model.S), axis=0),window)        
+        # 1st April. This roll is periodic, so it's now useful        
+        basis = tf.concat([basis, UF_],axis=1)
+        counter = counter + 1
+        if (i == 0):    
+            counter = 0
+
+ 
+    basis = mp.normalisation(basis)
+    ###### WARNING! AVOID TO ORTHOGONALISE UF THAT INCLUDE MORE THAN THE CENTRAL MANIFOLD ###
+    ####### TO DO: WRITING A SPECIAL ORTHONORMALISATION ROUTINE THAT DOES NOT MODIFY THE CENTRAL
+    ####### MANIFOLD
+    #basis = mp.tf_gram_schmidt(basis)    
+
+    return basis
+    #return UF
 
 
 def Unitary_Matrix_Norm(model): 
@@ -354,6 +414,7 @@ def Unitary_Matrix_Norm(model):
 
     else:        
     # 17 APRIL 2020: FOR SPIN SYSTEMS
+    #we only have to evaluate half of the reduction, because of the symmetry of the spectrum
         WX_n = [tf.reduce_sum(tf.multiply(model.x[1:int(counter/2)+1],model.W_n[0]),1)+model.c_n[0]]
         for j in range(1,model.hidden_n):
             y = tf.reduce_sum(tf.multiply(model.x[1:int(counter/2)+1],model.W_n[j]),1)+model.c_n[j]
@@ -430,7 +491,7 @@ def loss(model):
     #Residual: defined to minimise the difference between U_ and a diagonal form  + 
     #          
     #residual = tf.math.reduce_sum(tf.abs(U_diag-dotProd),0)
-    residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0) #+ 0.01*tf.linalg.trace(tf.math.real(U_))
+    residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0) + 1.0*tf.math.abs(tf.linalg.trace(U_))
     
     #tf.math.sqrt(tf.math.reduce_sum(tf.abs(U_diag-dotProd),0)) #+ tf.math.reduce_sum(tf.abs(U_diag),0)
     
@@ -450,28 +511,40 @@ def loss(model):
 def loss_RWA(model):
     #print(model.U_RWA)
     #print(model.UF)
-    k       = tf.keras.losses.KLDivergence()
-    UF      = Unitary_Matrix(model)    
+    k        = tf.keras.losses.KLDivergence()
+    UF       = Unitary_Matrix(model)    
+    U_Target = model.U_RWA
     
     #for i in range(0,N)
-    U_basis = tf.random.stateless_uniform(UF.shape,seed=[2,1],dtype=tf.float64,minval=-1.0,maxval=1.0)
-    U_basis = tf.linalg.svd(U_basis)[1]
+    #U_basis = tf.random.stateless_uniform(UF.shape,seed=[2,1],dtype=tf.float64,minval=-1.0,maxval=1.0)
+    #U_basis = tf.linalg.svd(U_basis)[1]
     
     #loss_  = k(tf.math.square(tf.abs(model.U_RWA[:,0])),tf.math.square(tf.abs(UF[:,0])))
     #basis_ = tf.expand_dims(loss_,0)
     #for i in range(UF.shape[1]-1):
     #    basis_ =  tf.concat([basis_,tf.expand_dims(tf.math.square(tf.abs(model.U_RWA[:,i+1])),tf.math.square(tf.abs(UF[:,i+1])),1)],axis=0)
-    if(model.S==2):
-        loss_0 = k(tf.math.square(tf.abs(model.U_RWA[:,0])),tf.math.square(tf.abs(UF[:,0])))
-        loss_1 = k(tf.math.square(tf.abs(model.U_RWA[:,1])),tf.math.square(tf.abs(UF[:,1])))
-        loss   = loss_0 + loss_1
+    if(UF.shape[1]>model.S): 
+        index_ = int(model.S*((UF.shape[1]/model.S -1))/2)#np.int(((model.S+1)*model.N))
+    else: 
+        index_ = 0
+            
+    loss = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF[:,index_])))
+    for i in range(U_Target.shape[1]-1):
+        ### WARNING ! DOES TF KEEP TRACK OF THE GRADIENTS WHEN THE LOSS IS ITERATIVE? =####
+        ###           OR SHOULD WE DEFINE AN ARRAY OF LOSSES AND THEN REDUCE THEM?     ####
+        loss = loss + k(tf.math.square(tf.abs(U_Target[:,i+1])),tf.math.square(tf.abs(UF[:,index_+i+1])))
 
-    if(model.S==4):
-        loss_0 = k(tf.math.square(tf.abs(model.U_RWA[:,0])),tf.math.square(tf.abs(UF[:,0])))
-        loss_1 = k(tf.math.square(tf.abs(model.U_RWA[:,1])),tf.math.square(tf.abs(UF[:,1])))
-        loss_2 = k(tf.math.square(tf.abs(model.U_RWA[:,2])),tf.math.square(tf.abs(UF[:,2])))
-        loss_3 = k(tf.math.square(tf.abs(model.U_RWA[:,3])),tf.math.square(tf.abs(UF[:,3])))
-        loss   = loss_0 + loss_1 + loss_2 + loss_3
+    #if(model.S==2):
+    #    loss_0 = k(tf.math.square(tf.abs(model.U_RWA[:,0])),tf.math.square(tf.abs(UF[:,0])))
+    #    loss_1 = k(tf.math.square(tf.abs(model.U_RWA[:,1])),tf.math.square(tf.abs(UF[:,1])))
+    #    loss   = loss_0 + loss_1
+
+    #if(model.S==4):
+    #    loss_0 = k(tf.math.square(tf.abs(model.U_RWA[:,0])),tf.math.square(tf.abs(UF[:,0])))
+    #    loss_1 = k(tf.math.square(tf.abs(model.U_RWA[:,1])),tf.math.square(tf.abs(UF[:,1])))
+    #    loss_2 = k(tf.math.square(tf.abs(model.U_RWA[:,2])),tf.math.square(tf.abs(UF[:,2])))
+    #    loss_3 = k(tf.math.square(tf.abs(model.U_RWA[:,3])),tf.math.square(tf.abs(UF[:,3])))
+    #    loss   = loss_0 + loss_1 + loss_2 + loss_3
     #print(loss)
     #loss = k(tf.reshape(tf.abs(model.UF),[52,1]),tf.reshape(tf.abs(model.U_RWA),[52,1]))
     #print(loss)
@@ -496,10 +569,10 @@ def loss_RWA_Phase(model):
     loss  = 0.0
     for i in range(0,N):
 
-        #U_basis_R = tf.random.stateless_uniform(model.H_TLS.shape,seed=[3,6],dtype=tf.float64,minval=-1.0,maxval=1.0)
-        #U_basis_I = tf.random.stateless_uniform(model.H_TLS.shape,seed=[7,3],dtype=tf.float64,minval=-1.0,maxval=1.0)
-        U_basis_R = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
-        U_basis_I = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
+        U_basis_R = tf.random.stateless_uniform(model.H_TLS.shape,seed=[3,6],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        U_basis_I = tf.random.stateless_uniform(model.H_TLS.shape,seed=[7,3],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        #U_basis_R = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
+        #U_basis_I = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
         U_basis   = tf.complex(U_basis_R,U_basis_I)
         U_basis   = tf.linalg.svd(U_basis)[1]
     
@@ -507,17 +580,33 @@ def loss_RWA_Phase(model):
             U_Target = U_basis@model.U_Floquet
             UF_      = U_basis@UF
         
-        if(model.S==2):
-            loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
-            loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:,1])))
-            loss   = loss + loss_0 + loss_1
+        if(UF_.shape[1]>model.S): 
+            index_ = np.int(((2*model.S+1)*model.N))
+        else:   
+            index_ = 0
             
-        if(model.S==4):
-            loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
-            loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:, 1])))
-            loss_2 = k(tf.math.square(tf.abs(U_Target[:,2])),tf.math.square(tf.abs(UF_[:, 2])))
-            loss_3 = k(tf.math.square(tf.abs(U_Target[:,3])),tf.math.square(tf.abs(UF_[:,3])))
-            loss   = loss + loss_0 + loss_1 + loss_2 + loss_3
+        if(UF_.shape[1]>model.S): 
+            index_ = int(model.S*((UF.shape[1]/model.S -1))/2)#np.int(((model.S+1)*model.N))
+        else: 
+            index_ = 0
+            
+        loss = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,index_])))
+        for i in range(U_Target.shape[1]-1):
+        ### WARNING ! DOES TF KEEP TRACK OF THE GRADIENTS WHEN THE LOSS IS ITERATIVE? =####
+        ###           OR SHOULD WE DEFINE AN ARRAY OF LOSSES AND THEN REDUCE THEM?     ####
+            loss = loss + k(tf.math.square(tf.abs(U_Target[:,i+1])),tf.math.square(tf.abs(UF_[:,index_+i+1])))
+
+        #if(model.S==2):
+        #   loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
+        #   loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:,1])))
+        #   loss   = loss + loss_0 + loss_1
+            
+        #if(model.S==4):
+        #    loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
+        #    loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:, 1])))
+        #    loss_2 = k(tf.math.square(tf.abs(U_Target[:,2])),tf.math.square(tf.abs(UF_[:, 2])))
+        #    loss_3 = k(tf.math.square(tf.abs(U_Target[:,3])),tf.math.square(tf.abs(UF_[:,3])))
+        #    loss   = loss + loss_0 + loss_1 + loss_2 + loss_3
                 
     return loss/N
 
@@ -528,7 +617,7 @@ def loss_Floquet(model):
     k       = tf.keras.losses.KLDivergence()
     UF      = Unitary_Matrix(model)    
     U_Target = model.U_Floquet
-    UF_      = UF    
+    #UF_      = UF    
     
     #H_       = tf.math.real(tf.transpose(tf.math.conj(UF))@model.H_TLS@UF)
     #H_Target = tf.math.real(tf.transpose(tf.math.conj(U_Target))@model.H_TLS@U_Target)
@@ -537,28 +626,40 @@ def loss_Floquet(model):
     N = 1 # N random basis
     loss  = 0.0
     for i in range(0,N):
-        U_basis_R = tf.random.stateless_uniform(model.H_TLS.shape,seed=[2,1],dtype=tf.float64,minval=-1.0,maxval=1.0)
-        U_basis_I = tf.random.stateless_uniform(model.H_TLS.shape,seed=[2,1],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        #U_basis_R = tf.random.stateless_uniform(model.H_TLS.shape,seed=[2,1],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        #U_basis_I = tf.random.stateless_uniform(model.H_TLS.shape,seed=[2,1],dtype=tf.float64,minval=-1.0,maxval=1.0)
         #U_basis_R = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
         #U_basis_I = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
-        U_basis   = tf.complex(U_basis_R,U_basis_I)
-        U_basis   = tf.linalg.svd(U_basis)[1]
+        #U_basis   = tf.complex(U_basis_R,U_basis_I)
+        #U_basis   = tf.linalg.svd(U_basis)[1]
     
-        if (N>1):
-            U_Target = U_basis@model.U_Floquet
-            UF_      = U_basis@UF
-        
-        if(model.S==2):
-            loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
-            loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:,1])))
-            loss   = loss + loss_0 + loss_1
+        #if (N>1):
+        #    U_Target = U_basis@model.U_Floquet
+        #    UF_      = U_basis@UF
+                
+        if(UF.shape[1]>model.S): 
+            index_ = int(model.S*((UF.shape[1]/model.S -1))/2)#np.int(((model.S+1)*model.N))
+        else: 
+            index_ = 0
             
-        if(model.S==4):
-            loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
-            loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:, 1])))
-            loss_2 = k(tf.math.square(tf.abs(U_Target[:,2])),tf.math.square(tf.abs(UF_[:, 2])))
-            loss_3 = k(tf.math.square(tf.abs(U_Target[:,3])),tf.math.square(tf.abs(UF_[:,3])))
-            loss   = loss + loss_0 + loss_1 + loss_2 + loss_3
+        loss = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF[:,index_])))
+        for i in range(U_Target.shape[1]-1):
+        ### WARNING ! DOES TF KEEP TRACK OF THE GRADIENTS WHEN THE LOSS IS ITERATIVE? =####
+        ###           OR SHOULD WE DEFINE AN ARRAY OF LOSSES AND THEN REDUCE THEM?     ####
+            loss = loss + k(tf.math.square(tf.abs(U_Target[:,i+1])),tf.math.square(tf.abs(UF[:,index_+i+1])))
+
+            
+        #if(model.S==2):
+        #    loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
+        #    loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:,1])))
+        #    loss   = loss + loss_0 + loss_1
+            
+        #if(model.S==4):
+        #    loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
+        #    loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:, 1])))
+        #    loss_2 = k(tf.math.square(tf.abs(U_Target[:,2])),tf.math.square(tf.abs(UF_[:, 2])))
+        #    loss_3 = k(tf.math.square(tf.abs(U_Target[:,3])),tf.math.square(tf.abs(UF_[:,3])))
+        #    loss   = loss + loss_0 + loss_1 + loss_2 + loss_3
                 
     return loss/N
 
@@ -579,28 +680,39 @@ def loss_Floquet_Phase(model):
     loss  = 0.0
     for i in range(0,N):
 
-        #U_basis_R = tf.random.stateless_uniform(model.H_TLS.shape,seed=[3,6],dtype=tf.float64,minval=-1.0,maxval=1.0)
-        #U_basis_I = tf.random.stateless_uniform(model.H_TLS.shape,seed=[7,3],dtype=tf.float64,minval=-1.0,maxval=1.0)
-        U_basis_R = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
-        U_basis_I = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
+        U_basis_R = tf.random.stateless_uniform(model.H_TLS.shape,seed=[3,6],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        U_basis_I = tf.random.stateless_uniform(model.H_TLS.shape,seed=[7,3],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        #U_basis_R = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
+        #U_basis_I = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
         U_basis   = tf.complex(U_basis_R,U_basis_I)
         U_basis   = tf.linalg.svd(U_basis)[1]
     
         if (N>1):
             U_Target = U_basis@model.U_Floquet
             UF_      = U_basis@UF
-        
-        if(model.S==2):
-            loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
-            loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:,1])))
-            loss   = loss + loss_0 + loss_1
+
+        if(UF.shape[1]>model.S): 
+            index_ = int(model.S*((UF.shape[1]/model.S -1))/2)#np.int(((model.S+1)*model.N))
+        else: 
+            index_ = 0
             
-        if(model.S==4):
-            loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
-            loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:, 1])))
-            loss_2 = k(tf.math.square(tf.abs(U_Target[:,2])),tf.math.square(tf.abs(UF_[:, 2])))
-            loss_3 = k(tf.math.square(tf.abs(U_Target[:,3])),tf.math.square(tf.abs(UF_[:,3])))
-            loss   = loss + loss_0 + loss_1 + loss_2 + loss_3
+        loss = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,index_])))
+        for i in range(U_Target.shape[1]-1):
+        ### WARNING ! DOES TF KEEP TRACK OF THE GRADIENTS WHEN THE LOSS IS ITERATIVE? =####
+        ###           OR SHOULD WE DEFINE AN ARRAY OF LOSSES AND THEN REDUCE THEM?     ####
+            loss = loss + k(tf.math.square(tf.abs(U_Target[:,i+1])),tf.math.square(tf.abs(UF_[:,index_+i+1])))
+
+        #if(model.S==2):
+        #    loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
+        #    loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:,1])))
+        #    loss   = loss + loss_0 + loss_1
+            
+        #if(model.S==4):
+        #    loss_0 = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,0])))
+        #    loss_1 = k(tf.math.square(tf.abs(U_Target[:,1])),tf.math.square(tf.abs(UF_[:, 1])))
+        #    loss_2 = k(tf.math.square(tf.abs(U_Target[:,2])),tf.math.square(tf.abs(UF_[:, 2])))
+        #    loss_3 = k(tf.math.square(tf.abs(U_Target[:,3])),tf.math.square(tf.abs(UF_[:,3])))
+        #    loss   = loss + loss_0 + loss_1 + loss_2 + loss_3
                 
     return loss/N
 

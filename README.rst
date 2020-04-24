@@ -2,14 +2,12 @@
 VariationalNN_Floquet
 =====================
 
-
-Add a short description here!
+A script to evaluate the parametrisaiton of Floquet states using a Restricted Boltzman Machine.
 
 
 Description
 ===========
 
-A longer description of your project goes here...
 
 
 Note
