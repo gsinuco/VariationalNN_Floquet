@@ -27,61 +27,73 @@ except Exception:
 import tensorflow as tf
 import numpy as np
 import math as m
+from model import FloquetHamiltonian
 from scipy.stats import unitary_group
 
 class Model(object):
-  def __init__(self):
+  def __init__(self,delta=0.0,Omega=0.1,phase=0.0):
 
-    # Hamiltonian parameters
-    self.delta = 1.00
-    self.Omega  = 0.10
+    self.spin    = True    
+    self.omega_0 = 1.00
+
+
+      
+      # Hamiltonian parameters
+    self.delta  = 1.70
+    self.omega  = self.delta + self.omega_0
+    self.Omega  = 5.00
+    self.phase  = phase # the phase in cos(omega t + phase)
 
     # Initialize the spin value and number of floquet channels
-    self.hidden_n  = 10  # hidden neurons
-    self.hidden_ph = 10  # hidden neurons
+    self.hidden_n  = 4  # hidden neurons
+    self.hidden_ph = 4  # hidden neurons
 
     self.S   = 2  # spin 3.2. Hilbert space dimension
     #self.S   = 2     # spin 1/2. Hilbert space dimension
-    self.N   = 0      # Number of positive Floquet manifolds
+    self.N   = 6      # Number of positive Floquet manifolds
     self.dim = self.S*(2*self.N+1) # Dimension of the extended floquet space
+ 
+    zero_ = tf.constant(0.0,dtype=tf.float64)
+    one_  = tf.constant(1.0,dtype=tf.float64)
+    j_ = tf.constant(tf.complex(zero_,one_),dtype=tf.complex128)
     
-    uf_      = tf.random.stateless_uniform([self.dim,self.dim],seed=[2,1],dtype=tf.float32,minval=0.0,maxval=1.0)      
-    s,u,v    = tf.linalg.svd(uf_, full_matrices=True)
+    #uf_      = tf.random.stateless_uniform([self.dim,self.dim],seed=[2,1],dtype=tf.float32,minval=0.0,maxval=1.0)      
+    #s,u,v    = tf.linalg.svd(uf_, full_matrices=True)
     #uf_      = u
     
     # Declaring training variables
     # Training parameters defining the norm 
     self.W_n   = tf.Variable(tf.random.stateless_uniform([self.hidden_n,self.dim*self.dim,2],
-                                                       seed=[1,1],dtype=tf.float32,
-                                                       minval=0.0,maxval=1.0),trainable=True) 
+                                                       seed=[1,1],dtype=tf.float64,
+                                                       minval=-1.0,maxval=1.0),trainable=True) 
     self.b_n   = tf.Variable(tf.random.stateless_uniform([self.dim*self.dim,2], 
-                                                       seed=[1,1],dtype=tf.float32,
-                                                       minval=0.0,maxval=1.0),trainable=True)
+                                                       seed=[1,1],dtype=tf.float64,
+                                                       minval=-1.0,maxval=1.0),trainable=True)
     self.c_n   = tf.Variable(tf.random.stateless_uniform([self.hidden_n],                    
-                                                       seed=[1,1],dtype=tf.float32,
-                                                       minval=0.0,maxval=1.0),trainable=True)
+                                                       seed=[1,1],dtype=tf.float64,
+                                                       minval=-1.0,maxval=1.0),trainable=True)
     
     # Training parameters defining the phase
     self.W_ph   = tf.Variable(tf.random.stateless_uniform([self.hidden_ph,self.dim*self.dim,2],
-                                                       seed=[1,1],dtype=tf.float32,
-                                                       minval=0.0,maxval=1.0),trainable=True) 
+                                                       seed=[1,1],dtype=tf.float64,
+                                                       minval=-1.0,maxval=1.0),trainable=True) 
     self.b_ph   = tf.Variable(tf.random.stateless_uniform([self.dim*self.dim,2], 
-                                                       seed=[1,1],dtype=tf.float32,
-                                                       minval=0.0,maxval=1.0),trainable=True)
+                                                       seed=[1,1],dtype=tf.float64,
+                                                       minval=-1.0,maxval=1.0),trainable=True)
     self.c_ph   = tf.Variable(tf.random.stateless_uniform([self.hidden_ph],                    
-                                                       seed=[1,1],dtype=tf.float32,
-                                                       minval=0.0,maxval=1.0),trainable=True)
+                                                       seed=[1,1],dtype=tf.float64,
+                                                       minval=-1.0,maxval=1.0),trainable=True)
     
     
-    UF_aux  = tf.Variable(np.zeros((self.dim*self.dim), dtype=np.complex64),trainable = False)  # ext. micromotion operator
+    UF_aux  = tf.Variable(np.zeros((self.dim*self.dim), dtype=np.complex128),trainable = False)  # ext. micromotion operator
 
-    UF_n  = tf.Variable(np.zeros((self.dim,self.dim), dtype=np.complex64),trainable = False)  # ext. micromotion operator
-    UF_ph  = tf.Variable(np.zeros((self.dim,self.dim), dtype=np.complex64),trainable = False)  # ext. micromotion operator
-    self.UF  = tf.Variable(np.zeros((self.dim,self.dim), dtype=np.complex64),trainable = False)  # ext. micromotion operator
+    UF_n  = tf.Variable(np.zeros((self.dim,self.dim), dtype=np.complex128),trainable = False)  # ext. micromotion operator
+    UF_ph  = tf.Variable(np.zeros((self.dim,self.dim), dtype=np.complex128),trainable = False)  # ext. micromotion operator
+    self.UF  = tf.Variable(np.zeros((self.dim,self.dim), dtype=np.complex128),trainable = False)  # ext. micromotion operator
 
     
     # defining the labels of the input layer, which are the components of the UF matrix
-    self.x = tf.Variable([[0.0,0.0]],dtype=tf.float32)
+    self.x = tf.Variable([[0.0,0.0]],dtype=tf.float64)
     counter = 0
     self.count = counter
     for i in range(1,self.dim+1):        
@@ -136,31 +148,37 @@ class Model(object):
     
     if self.S == 2:
         # spin 1/2 
-        Identity   =     tf.constant([[1.0,0.0],[ 0.0, 1.0]],dtype = tf.complex64)
-        Sx         = 0.5*tf.constant([[0.0,1.0],[ 1.0, 0.0]],dtype = tf.complex64)
-        Sz         = 0.5*tf.constant([[1.0,0.0],[ 0.0,-1.0]],dtype = tf.complex64)
+        self.Identity   =     tf.constant([[1.0,0.0],[ 0.0, 1.0]],dtype = tf.complex128)
+        self.Sx         =    0.5*tf.constant([[0.0,1.0],[ 1.0, 0.0]],dtype = tf.complex128)
+        self.Sy         = j_*0.5*tf.constant([[0.0,1.0],[-1.0, 0.0]],dtype = tf.complex128)
+        self.Sz         =    0.5*tf.constant([[1.0,0.0],[ 0.0,-1.0]],dtype = tf.complex128)
     else:
         if self.S == 4:
         # spin 3/2
-            Identity   =     tf.constant([[1.0,0.0,0.0,0.0],
+            self.Identity   =     tf.constant([[1.0,0.0,0.0,0.0],
                                   [0.0,1.0,0.0,0.0],
                                   [0.0,0.0,1.0,0.0],
-                                  [0.0,0.0,0.0,1.0]],dtype = tf.complex64)
-            Sx         = 0.5*tf.constant([[0.0,         np.sqrt(3.0),0.0,          0.0],
+                                  [0.0,0.0,0.0,1.0]],dtype = tf.complex128)
+            self.Sx         = 0.5*tf.constant([[0.0,         np.sqrt(3.0),0.0,          0.0],
                                   [np.sqrt(3.0),0.0,         np.sqrt(4.0), 0.0],
                                   [0.0,         np.sqrt(4.0),0.0,          np.sqrt(4.0)],
-                                  [0.0,         0.0,         np.sqrt(3.0), 0.0]],dtype = tf.complex64)
-            Sz         = 0.5*tf.constant([[3.0,0.0, 0.0, 0.0],
+                                  [0.0,         0.0,         np.sqrt(3.0), 0.0]],dtype = tf.complex128)
+            self.Sz         = 0.5*tf.constant([[3.0,0.0, 0.0, 0.0],
                                   [0.0,1.0, 0.0, 0.0],
                                   [0.0,0.0,-1.0, 0.0],
-                                  [0.0,0.0, 0.0,-3.0]],dtype = tf.complex64)
+                                  [0.0,0.0, 0.0,-3.0]],dtype = tf.complex128)
+    
+    self.Szero      = tf.zeros([self.S,self.S],dtype=tf.complex128)
+
     #else:
     #    if (self.S != 4 & self.S !=2):
     #        for j in range(0,self.S):
     #            H[j,j]
     
-    
-    self.H_TLS = tf.Variable(self.delta*Sz+0.5*self.Omega*Sx,shape=(self.dim,self.dim),dtype = tf.complex64,trainable = False)  # ext. Hamiltonian
+    if self.N == 0:
+        self.H_TLS = tf.Variable(self.delta*self.Sz+0.5*self.Omega*self.Sx,shape=(self.dim,self.dim),dtype = tf.complex128,trainable = False)  # ext. Hamiltonian
+    else:
+        self.H_TLS = FloquetHamiltonian(self)  # ext. Hamiltonian
         
     self.trainable_variables = [self.W_n,self.b_n,self.c_n,self.W_ph,self.b_ph,self.c_ph]
     
@@ -267,7 +285,7 @@ def loss(model):
     U_ = tf.abs(tf.transpose(tf.math.conj(UF))@model.H_TLS@UF)
     U_diag = tf.linalg.tensor_diag_part(U_)  
     dotProd = tf.math.reduce_sum(abs(U_),axis=1,)    
-    residual = tf.math.reduce_sum(tf.pow((U_diag-dotProd),2),0)
+    residual = tf.math.reduce_sum(tf.abs((U_diag-dotProd)),0)
         
     U_ = tf.abs(tf.transpose(tf.math.conj(UF))@UF)
     #print(U_)
@@ -301,7 +319,7 @@ loss_value = loss(model)
 print("Initial UF guess: ", Unitary_Matrix(model))
 print("Initial loss value: ",loss_value.numpy())
 
-epochs = range(128)
+epochs = range(512)
 for i in epochs:
     loss_value, grads = grad(model)
     optimizer.apply_gradients(zip(grads, model.trainable_variables))

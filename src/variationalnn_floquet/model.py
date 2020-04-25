@@ -16,11 +16,13 @@ Definition of the model: Definition of the Hamiltonian components
                          definition of the training sequence
                          
 """
+
 import tensorflow as tf
 import numpy as np
 import math as m
 
 import matrixmanipulation as mp
+import matplotlib.pyplot as plt
 
 class Hamiltonian():
   def __init__(self,delta=0.0,Omega=0.1,phase=0.0):
@@ -137,11 +139,12 @@ class RBM_Model(Hamiltonian,object):
     Hamiltonian.__init__(self,delta,Omega,phase)  
 
     # Initialize the spin value and number of floquet channels
-    self.hidden_n  = 16 # hidden neurons
-    self.hidden_ph = 32  # hidden neurons
+    self.hidden_n  = 4#16 # hidden neurons
+    self.hidden_ph = 4#32  # hidden neurons
 
 
-    self.N_Floquet_UF = self.N/2 # Number of Floquet manifolds used to build the micromotion operator
+    self.N_Floquet_UF = self.N # Number of Floquet manifolds used to build the micromotion operator
+    Gaussian_width    = 1.0
     
     if BiasWeights:
     # Declaring training variables
@@ -238,13 +241,13 @@ class RBM_Model(Hamiltonian,object):
         for l in range(-self.N,self.N+1):
             for i in range(1,self.S+1):        
                 if(self.S==4):
-                    if(l!=0): y = [[-i+2.5,j-2.5,1.0/l]]
+                    if(l!=0): y = [[-i+2.5,j-2.5,1.0]]
                     if(l==0): y = [[-i+2.5,j-2.5,1.0]]
                     #if(l!=0): y = [[i-2.5,0,1.0/l]]
                     #if(l==0): y = [[i-2.5,0,l]]
 
                 if(self.S==2):
-                    if(l!=0): y = [[-i+1.5,j-1.5,1.0/l]]
+                    if(l!=0): y = [[-i+1.5,j-1.5,1.0]]
                     if(l==0): y = [[-i+1.5,j-1.5,1.0]]
                     #if(l!=0): y = [[i-1.5,0,1.0/l]]
                     #if(l==0): y = [[i-1.5,0,l]]
@@ -260,7 +263,27 @@ class RBM_Model(Hamiltonian,object):
     
     zeros_aux  = tf.zeros([self.S*(self.N-1),self.S],dtype=tf.complex128)    
     self.U_RWA = tf.concat([zeros_aux,self.U_RWA,zeros_aux],axis=0)
-            
+    
+    Gaussian_modulation = tf.math.exp(-np.power((np.linspace(0,self.dim-1,self.dim) - (self.dim-1)/2),2)/Gaussian_width)
+    Gaussian_modulation = tf.expand_dims(Gaussian_modulation,1)    
+    Gaussian_modulation = tf.concat([Gaussian_modulation,Gaussian_modulation],axis=1)
+        
+    U_Random_rho        = tf.random.stateless_uniform([self.dim,self.S], 
+                                            seed=[1,1],dtype=tf.float64,
+                                            minval=0.0,maxval=1.0)#
+    U_Random_rho        = tf.multiply(U_Random_rho,Gaussian_modulation)
+    
+    U_Random_phase      = tf.random.stateless_uniform([self.dim,self.S], 
+                                            seed=[1,1],dtype=tf.float64,
+                                            minval=-1.0,maxval=1.0)
+    U_cos = tf.math.cos(np.pi*U_Random_phase)
+    U_sin = tf.math.sin(np.pi*U_Random_phase)
+
+    UF = mp.normalisation(tf.complex(U_Random_rho*U_cos,U_Random_rho*U_sin))
+    UF = mp.tf_gram_schmidt(UF)
+    
+    self.U_Random = UF#tf.complex(U_Random_rho*U_cos,U_Random_rho*U_sin)
+
     self.trainable_variables = [self.W_n,self.b_n,self.c_n,self.W_ph,self.b_ph,self.c_ph]
     #self.trainable_variables = [self.W_n,self.b_n,self.c_n]
         
@@ -365,30 +388,39 @@ def Unitary_Matrix(model):
 
 
 
-    window = tf.concat([tf.ones([model.S*(model.N+1),model.S],tf.complex128),tf.zeros([model.S*(model.N),model.S],tf.complex128)],axis=0)
-    
-    basis = tf.math.multiply(tf.roll(UF,shift=int(-model.N*model.S),axis=0),window)    
-  
-    counter = 1
-    for i in range(-model.N+1,model.N+1):#vectors.get_shape()[0].value):        
-        if (i <= 0):
-            window = tf.concat([tf.ones([model.S*(model.N+1 + counter),model.S],tf.complex128),tf.zeros([model.S*(model.N-counter),model.S],tf.complex128)],axis=0)
-        if (i>0):   
-            window = tf.concat([tf.zeros([model.S*(model.N + counter),model.S],tf.complex128),tf.ones([model.S*(model.N+1-counter),model.S],tf.complex128)],axis=0)
-            
-        UF_ = tf.math.multiply(tf.roll(UF,shift = int(i*model.S), axis=0),window)        
-        # 1st April. This roll is periodic, so it's now useful        
-        basis = tf.concat([basis, UF_],axis=1)
-        counter = counter + 1
-        if (i == 0):    
-            counter = 0
+    if (model.N_Floquet_UF > 0) :
+        #window = tf.concat([tf.ones([model.S*(model.N+1),model.S],tf.complex128),tf.zeros([model.S*(model.N),model.S],tf.complex128)],axis=0)
+        window = tf.concat([tf.ones([model.dim - model.S*(model.N_Floquet_UF),model.S],tf.complex128),tf.zeros([model.S*(model.N_Floquet_UF),model.S],tf.complex128)],axis=0)
 
- 
-    basis = mp.normalisation(basis)
-    ###### WARNING! AVOID TO ORTHOGONALISE UF THAT INCLUDE MORE THAN THE CENTRAL MANIFOLD ###
-    ####### TO DO: WRITING A SPECIAL ORTHONORMALISATION ROUTINE THAT DOES NOT MODIFY THE CENTRAL
-    ####### MANIFOLD
-    #basis = mp.tf_gram_schmidt(basis)    
+        #basis = tf.math.multiply(tf.roll(UF,shift=int(-model.N*model.S),axis=0),window)    
+        basis = tf.math.multiply(tf.roll(UF,shift=int(-model.N_Floquet_UF*model.S),axis=0),window)    
+  
+        counter = 1
+        
+        #for i in range(-model.N+1,model.N+1):#vectors.get_shape()[0].value):        
+        for i in range(-model.N_Floquet_UF + 1,model.N_Floquet_UF + 1):       
+               
+            if (i <= 0):
+
+                window = tf.concat([tf.ones([model.dim +model.S*i,model.S], tf.complex128), tf.zeros([-model.S*i,model.S],tf.complex128)],axis=0)
+                #window = tf.concat([tf.ones([model.S*(model.N+1 + counter),model.S],tf.complex128),tf.zeros([model.S*(model.N-counter),model.S],tf.complex128)],axis=0)
+            if (i>0):   
+                window = tf.concat([tf.zeros([model.S*(   counter +1),model.S],tf.complex128),tf.ones([model.S*(2*model.N + 1 - (counter                                      +1)),model.S],tf.complex128)],axis=0)
+            
+            UF_ = tf.math.multiply(tf.roll(UF,shift = int(i*model.S), axis=0),window)        
+            # 1st April. This roll is periodic, so it's now useful        
+            basis = tf.concat([basis, UF_],axis=1)
+            counter = counter + 1
+            if (i == 0):    
+                counter = 0
+        #basis = mp.normalisation(basis)
+        ###### WARNING! AVOID TO ORTHOGONALISE UF THAT INCLUDE MORE THAN THE CENTRAL MANIFOLD ###
+        ####### TO DO: WRITING A SPECIAL ORTHONORMALISATION ROUTINE THAT DOES NOT MODIFY THE CENTRAL
+        ####### MANIFOLD
+        #basis = mp.tf_gram_schmidt(basis)    
+
+    else:
+        basis = UF
 
     return basis
     #return UF
@@ -483,15 +515,16 @@ def loss(model):
     UF = Unitary_Matrix(model)
     #print(tf.abs(tf.matmul(UF,UF,adjoint_a=True)))
     
-    U_      = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
-    #print(U_)
-    U_diag  = tf.abs(tf.linalg.tensor_diag_part(U_))  
-    dotProd = tf.math.reduce_sum(abs(U_),axis=1,)    
+    U_         = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
+
+    U_diag     = tf.abs(tf.linalg.tensor_diag_part(U_))  
+    dotProd    = tf.math.reduce_sum(abs(U_),axis=1,)
+    projection = tf.concat([np.ones([1],dtype=np.float64),np.zeros([U_diag.shape[0]-1],dtype=np.float64)], axis = 0)    
     #residual = tf.math.sqrt(tf.math.reduce_sum(tf.pow((U_diag-dotProd),2),0))
     #Residual: defined to minimise the difference between U_ and a diagonal form  + 
     #          
     #residual = tf.math.reduce_sum(tf.abs(U_diag-dotProd),0)
-    residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0) + 1.0*tf.math.abs(tf.linalg.trace(U_))
+    residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0) + 1.0*tf.math.abs(tf.linalg.trace(U_)) + tf.math.abs(tf.tensordot(U_diag,projection,axes=1))
     
     #tf.math.sqrt(tf.math.reduce_sum(tf.abs(U_diag-dotProd),0)) #+ tf.math.reduce_sum(tf.abs(U_diag),0)
     
@@ -667,8 +700,8 @@ def loss_Floquet(model):
 def loss_Floquet_Phase(model):
     #print(model.U_RWA)
     #print(model.UF)
-    k       = tf.keras.losses.KLDivergence()
-    UF      = Unitary_Matrix(model)    
+    k        = tf.keras.losses.KLDivergence()
+    UF       = Unitary_Matrix(model)    
     U_Target = model.U_Floquet
     UF_      = UF    
 
@@ -718,14 +751,80 @@ def loss_Floquet_Phase(model):
 
 
 
+
+def loss_Psi_rho(model):
+
+    k        = tf.keras.losses.KLDivergence()
+    UF       = Unitary_Matrix(model)    
+    U_Target = model.U_Random
+
+    N = 1 # N random basis
+    loss  = 0.0
+    for i in range(0,N):
+                
+        if(UF.shape[1]>model.S): 
+            index_ = int(model.S*((UF.shape[1]/model.S -1))/2)#np.int(((model.S+1)*model.N))
+        else: 
+            index_ = 0
+            
+        loss = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF[:,index_])))
+        for i in range(U_Target.shape[1]-1):
+        ### WARNING ! DOES TF KEEP TRACK OF THE GRADIENTS WHEN THE LOSS IS ITERATIVE? =####
+        ###           OR SHOULD WE DEFINE AN ARRAY OF LOSSES AND THEN REDUCE THEM?     ####
+            loss = loss + k(tf.math.square(tf.abs(U_Target[:,i+1])),tf.math.square(tf.abs(UF[:,index_+i+1])))
+                
+    return loss/N
+
+
+def loss_Psi_Phase(model):
+
+    k        = tf.keras.losses.KLDivergence()
+    UF       = Unitary_Matrix(model)    
+    U_Target = model.U_Random
+    UF_      = UF    
+
+    # the first term of loss_H drives an asymmetry of the eigenvalues
+    N = 8 # N random basis
+    loss  = 0.0
+    for i in range(0,N):
+
+        U_basis_R = tf.random.stateless_uniform(model.H_TLS.shape,seed=[3,6],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        U_basis_I = tf.random.stateless_uniform(model.H_TLS.shape,seed=[7,3],dtype=tf.float64,minval=-1.0,maxval=1.0)
+        #U_basis_R = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
+        #U_basis_I = tf.random.uniform(model.H_TLS.shape,dtype=tf.float64,minval=-1.0,maxval=1.0)
+        U_basis   = tf.complex(U_basis_R,U_basis_I)
+        U_basis   = tf.linalg.svd(U_basis)[1]
+    
+        if (N>1):
+            U_Target = U_basis@model.U_Floquet
+            UF_      = U_basis@UF
+
+        if(UF.shape[1]>model.S): 
+            index_ = int(model.S*((UF.shape[1]/model.S -1))/2)#np.int(((model.S+1)*model.N))
+        else: 
+            index_ = 0
+            
+        loss = k(tf.math.square(tf.abs(U_Target[:,0])),tf.math.square(tf.abs(UF_[:,index_])))
+        for i in range(U_Target.shape[1]-1):
+        ### WARNING ! DOES TF KEEP TRACK OF THE GRADIENTS WHEN THE LOSS IS ITERATIVE? =####
+        ###           OR SHOULD WE DEFINE AN ARRAY OF LOSSES AND THEN REDUCE THEM?     ####
+            loss = loss + k(tf.math.square(tf.abs(U_Target[:,i+1])),tf.math.square(tf.abs(UF_[:,index_+i+1])))
+                
+    return loss/N
+
+
+
 # This is the gradient of the loss function. required for keras optimisers
 def grad(model):
   with tf.GradientTape() as tape:
     loss_value = loss(model)
   return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
+#def grad_fun(model,loss_fun):
 def grad_fun(model,loss_fun):
+#def grad_fun(model,loss_fun,U_Target_):
   with tf.GradientTape() as tape:
+    #loss_value = loss_fun(model,U_Target_)
     loss_value = loss_fun(model)
   return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
