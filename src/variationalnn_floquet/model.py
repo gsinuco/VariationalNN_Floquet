@@ -139,11 +139,11 @@ class RBM_Model(Hamiltonian,object):
     Hamiltonian.__init__(self,delta,Omega,phase)  
 
     # Initialize the spin value and number of floquet channels
-    self.hidden_n  = 4#16 # hidden neurons
-    self.hidden_ph = 4#32  # hidden neurons
+    self.hidden_n  = 16 # hidden neurons
+    self.hidden_ph = 32  # hidden neurons
 
 
-    self.N_Floquet_UF = self.N # Number of Floquet manifolds used to build the micromotion operator
+    self.N_Floquet_UF = 10#self.N # Number of Floquet manifolds used to build the micromotion operator
     Gaussian_width    = 1.0
     
     if BiasWeights:
@@ -174,18 +174,18 @@ class RBM_Model(Hamiltonian,object):
             # and we reqiure less parameters. This also modifies the way we build the transformation    matrix
             # def Unitary_Matrix(model)
         else:
-            self.W_n   =    tf.Variable(tf.random.stateless_uniform([self.hidden_n,int(0.5*self.S*self.dim),3],
-                                                           seed=[1,2],dtype=tf.float64,
-                                                           minval=-1.0,maxval=1.0),trainable=True) 
-            self.b_n   = tf.Variable(tf.random.stateless_uniform([int(0.5*self.S*self.dim),3], 
-                                                           seed=[2,1],dtype=tf.float64,
-                                                          minval=-1.0,maxval=1.0),trainable=True)
-            #self.W_n   = tf.Variable(tf.random.uniform([self.hidden_n,int(0.5*self.S*self.dim),3],
-            #                                                dtype=tf.float64,
-            #                                                minval=-1.0,maxval=1.0),trainable=True) 
-            #self.b_n   = tf.Variable(tf.random.uniform([int(0.5*self.S*self.dim),3], 
-            #                                                dtype=tf.float64,
-            #                                                minval=-1.0,maxval=1.0),trainable=True)
+#            self.W_n   =    tf.Variable(tf.random.stateless_uniform([self.hidden_n,int(0.5*self.S*self.dim),3],
+                                                           #seed=[1,2],dtype=tf.float64,
+                                                           #minval=-1.0,maxval=1.0),trainable=True) 
+#            self.b_n   = tf.Variable(tf.random.stateless_uniform([int(0.5*self.S*self.dim),3], 
+                                                           #seed=[2,1],dtype=tf.float64,
+                                                          #minval=-1.0,maxval=1.0),trainable=True)
+            self.W_n   = tf.Variable(tf.random.uniform([self.hidden_n,int(0.5*self.S*self.dim),3],
+                                                            dtype=tf.float64,
+                                                            minval=-1.0,maxval=1.0),trainable=True) 
+            self.b_n   = tf.Variable(tf.random.uniform([int(0.5*self.S*self.dim),3], 
+                                                            dtype=tf.float64,
+                                                            minval=-1.0,maxval=1.0),trainable=True)
                 
             ### ENHANCING THE WEIGHT OF THE CENTRAL MANIFOLD
             #for i in range(self.S):
@@ -200,38 +200,38 @@ class RBM_Model(Hamiltonian,object):
                             
             #self.c_n   = tf.Variable(tf.zeros([self.hidden_n],dtype=tf.float64)
             #                                                  ,trainable=True)
-            self.c_n   = tf.Variable(tf.random.stateless_uniform([self.hidden_n],                    
-                                                              seed=[1,3],dtype=tf.float64,
-                                                              minval=-1.0,maxval=1.0),trainable=True)
-            #self.c_n   = tf.Variable(tf.random.uniform([self.hidden_n],                    
-            #                                           dtype=tf.float64,
-            #                                           minval=-1.0,maxval=1.0),trainable=True)
+            #self.c_n   = tf.Variable(tf.random.stateless_uniform([self.hidden_n],                    
+            #                                                  seed=[1,3],dtype=tf.float64,
+            #                                                  minval=-1.0,maxval=1.0),trainable=True)
+            self.c_n   = tf.Variable(tf.random.uniform([self.hidden_n],                    
+                                                       dtype=tf.float64,
+                                                       minval=-1.0,maxval=1.0),trainable=True)
     
             # Training parameters defining the phase
             #self.W_ph   = tf.Variable(tf.ones([self.hidden_n,self.S*self.dim,3],dtype=tf.float64)
             #                                                  ,trainable=True) 
-            self.W_ph   = tf.Variable(tf.random.stateless_uniform([self.hidden_ph,self.S*self.dim,3],
-                                                               seed=[3,1],dtype=tf.float64,
-                                                               minval=-10.0,maxval=10.0),trainable=True) 
-            #self.W_ph   = tf.Variable(tf.random.uniform([self.hidden_ph,self.S*self.dim,3],
-            #                                           dtype=tf.float64,
-            #                                           minval=-10.0,maxval=10.0),trainable=True) 
+            #self.W_ph   = tf.Variable(tf.random.stateless_uniform([self.hidden_ph,self.S*self.dim,3],
+            #                                                   seed=[3,1],dtype=tf.float64,
+            #                                                minval=-10.0,maxval=10.0),trainable=True) 
+            self.W_ph   = tf.Variable(tf.random.uniform([self.hidden_ph,self.S*self.dim,3],
+                                                       dtype=tf.float64,
+                                                       minval=-10.0,maxval=10.0),trainable=True) 
             #self.b_ph   = tf.Variable(tf.ones([self.S*self.dim,3],dtype=tf.float64)
             #                                                   ,trainable=True)
-            self.b_ph   = tf.Variable(tf.random.stateless_uniform([self.S*self.dim,3], 
-                                                               seed=[1,1],dtype=tf.float64,
-                                                               minval=-10.0,maxval=10.0),trainable=True)
-            #self.b_ph   = tf.Variable(tf.random.uniform([self.S*self.dim,3], 
-            #                                           dtype=tf.float64,
-            #                                           minval=-10.0,maxval=10.0),trainable=True)
+            #self.b_ph   = tf.Variable(tf.random.stateless_uniform([self.S*self.dim,3], 
+            #                                                   seed=[1,1],dtype=tf.float64,
+            #                                                minval=-10.0,maxval=10.0),trainable=True)
+            self.b_ph   = tf.Variable(tf.random.uniform([self.S*self.dim,3], 
+                                                       dtype=tf.float64,
+                                                       minval=-10.0,maxval=10.0),trainable=True)
             #self.c_ph   = tf.Variable(tf.ones([self.hidden_n],dtype=tf.float64)
             #                                                  ,trainable=True)
-            self.c_ph   = tf.Variable(tf.random.stateless_uniform([self.hidden_ph],                    
-                                                               seed=[1,1],dtype=tf.float64,
-                                                               minval=-10.0,maxval=10.0),trainable=True)
-            #self.c_ph   = tf.Variable(tf.random.uniform([self.hidden_ph],                    
-            #                                           dtype=tf.float64,
-            #                                           minval=-10.0,maxval=10.0),trainable=True)
+            #self.c_ph   = tf.Variable(tf.random.stateless_uniform([self.hidden_ph],                    
+            #                                                   seed=[1,1],dtype=tf.float64,
+            #                                                minval=-10.0,maxval=10.0),trainable=True)
+            self.c_ph   = tf.Variable(tf.random.uniform([self.hidden_ph],                    
+                                                       dtype=tf.float64,
+                                                       minval=-10.0,maxval=10.0),trainable=True)
         
     # defining the labels of the input layer, which are the components of the UF matrix
     self.x = tf.Variable([[0.0,0.0,0.0]],dtype=tf.float64)
@@ -241,13 +241,13 @@ class RBM_Model(Hamiltonian,object):
         for l in range(-self.N,self.N+1):
             for i in range(1,self.S+1):        
                 if(self.S==4):
-                    if(l!=0): y = [[-i+2.5,j-2.5,1.0]]
+                    if(l!=0): y = [[-i+2.5,j-2.5,1.0/l]]
                     if(l==0): y = [[-i+2.5,j-2.5,1.0]]
                     #if(l!=0): y = [[i-2.5,0,1.0/l]]
                     #if(l==0): y = [[i-2.5,0,l]]
 
                 if(self.S==2):
-                    if(l!=0): y = [[-i+1.5,j-1.5,1.0]]
+                    if(l!=0): y = [[-i+1.5,j-1.5,1.0/l]]
                     if(l==0): y = [[-i+1.5,j-1.5,1.0]]
                     #if(l!=0): y = [[i-1.5,0,1.0/l]]
                     #if(l==0): y = [[i-1.5,0,l]]
@@ -501,30 +501,53 @@ def train_with_loss(model,learning_rate,loss_fun):
 #     the loss function is the summ of the square of these differences. 
 
 def loss(model):
-  # define the loss function explicitly including the training variables: model.W, model.b
-  # model.UF is a function of self.W,self.b,self.c
-    #UF    = tf.Variable(np.zeros((model.dim*model.dim), dtype=np.complex64),trainable = False)  # ext. micromotion operator
-  
-    #UF = tf.Variable(np.zeros((model.dim,model.dim),dtype=np.complex64)) 
-    #a  = np.zeros((model.dim,model.dim),dtype=np.float32)
-    #counter = model.count 
 
-    #Building of the marginal probability of the RBM using the training parameters and labels of the input layer    
-    #P(x)(b,c,W) = exp(bji . x) Prod_l=1^M 2 x cosh(c_l + W_{x,l} . x)
-    # 1. Amplitude (norm)
-    UF = Unitary_Matrix(model)
-    #print(tf.abs(tf.matmul(UF,UF,adjoint_a=True)))
     
-    U_         = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
+    UF = Unitary_Matrix(model)
+    
+############ DEFINITION OF A LOSS FUNCTION WITH THE ########################################
+############ TRANSFORMED HAMILTONIAN    ####################################################
 
+    
+
+    U_         = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
     U_diag     = tf.abs(tf.linalg.tensor_diag_part(U_))  
-    dotProd    = tf.math.reduce_sum(abs(U_),axis=1,)
-    projection = tf.concat([np.ones([1],dtype=np.float64),np.zeros([U_diag.shape[0]-1],dtype=np.float64)], axis = 0)    
+    dotProd    = tf.math.reduce_sum(abs(U_),axis=0,)
+    residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0) #+
+    
+    #projection = tf.concat([np.ones([1],dtype=np.float64),np.zeros([U_diag.shape[0]-1],dtype=np.float64)], axis = 0)    
     #residual = tf.math.sqrt(tf.math.reduce_sum(tf.pow((U_diag-dotProd),2),0))
     #Residual: defined to minimise the difference between U_ and a diagonal form  + 
     #          
     #residual = tf.math.reduce_sum(tf.abs(U_diag-dotProd),0)
-    residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0) + 1.0*tf.math.abs(tf.linalg.trace(U_)) + tf.math.abs(tf.tensordot(U_diag,projection,axes=1))
+    #residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0) + 1.0*tf.math.abs(tf.linalg.trace(U_)) + tf.math.abs(tf.tensordot(U_diag,projection,axes=1))
+
+############ DEFINITION OF A LOSS FUNCTION WITH THE CENTRAL SECTION OF THE #################
+############ TRANSFORMED HAMILTONIAN    ####################################################
+    #index_  = model.N_Floquet_UF*model.S
+    #U_      = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF[:,index_:index_+model.S]
+    #eltos   = tf.constant([[model.N_Floquet_UF*model.S,0]],dtype=tf.int32)
+    #for i in range(model.S-1):
+    #    eltos = tf.concat([eltos,[[model.N_Floquet_UF*model.S+1+i,1+i]]],axis=0)    
+    #U_diag   = tf.abs(tf.gather_nd(U_,eltos))
+    #dotProd = tf.math.reduce_sum(abs(U_),axis=0,)
+    #residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0) #+     
+
+
+########### DEFINITION OF A LOSS FUNCTION COMPARING THE TRANSFORMED VECTOR (BY H_TLS) ######
+########### AGAINS ITSELF. BOTH SHOULD BE RELATED BY A SIMPLE SCALE ########################
+    #index_  = model.N_Floquet_UF*model.S
+    #U_      = model.H_TLS@UF[:,index_:index_+model.S]
+    #for i in range(U_.shape[1]): avoid the loop! 
+        # find element with maxima amplitude, index j_max
+        #tf.math.reduce_max(tf.abs(U_),axes=0)    i    
+        # evaluate the ratio lambda_i = U_[j_max,i]/UF[j_max,i]
+    #    tf.math.divide()
+        # evaluate UF_ = lambda_j * UF[:,j]
+        # evaluate the sum of the differences U_ - UF_
+    #U_diag   = tf.abs(tf.gather_nd(U_,eltos))
+    #residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0) #+     
+
     
     #tf.math.sqrt(tf.math.reduce_sum(tf.abs(U_diag-dotProd),0)) #+ tf.math.reduce_sum(tf.abs(U_diag),0)
     

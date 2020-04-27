@@ -39,18 +39,18 @@ class Model(object):
 
       
       # Hamiltonian parameters
-    self.delta  = 1.70
+    self.delta  = 0.00
     self.omega  = self.delta + self.omega_0
-    self.Omega  = 5.00
+    self.Omega  = 1.00
     self.phase  = phase # the phase in cos(omega t + phase)
 
     # Initialize the spin value and number of floquet channels
     self.hidden_n  = 4  # hidden neurons
     self.hidden_ph = 4  # hidden neurons
 
-    self.S   = 2  # spin 3.2. Hilbert space dimension
+    self.S   = 4  # spin 3.2. Hilbert space dimension
     #self.S   = 2     # spin 1/2. Hilbert space dimension
-    self.N   = 6      # Number of positive Floquet manifolds
+    self.N   = 0      # Number of positive Floquet manifolds
     self.dim = self.S*(2*self.N+1) # Dimension of the extended floquet space
  
     zero_ = tf.constant(0.0,dtype=tf.float64)
@@ -319,7 +319,7 @@ loss_value = loss(model)
 print("Initial UF guess: ", Unitary_Matrix(model))
 print("Initial loss value: ",loss_value.numpy())
 
-epochs = range(512)
+epochs = range(2048)
 for i in epochs:
     loss_value, grads = grad(model)
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
