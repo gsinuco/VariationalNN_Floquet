@@ -71,10 +71,11 @@ for i in [18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
     Omega = 10.0*i/N
     phase = np.arctan(1.0)/4.1341341
     
+    #N_training = 64
     #H = Model.Hamiltonian(delta,Omega,phase)
-    #CentralFloquetE_RBM[i],CentralFloquetEVec_RBM[i],loss_list_RWA,trained_parameters = training.RMB_training_Psi(H,Model.loss_Floquet,Model.loss_Floquet_Phase)
+    #trained_parameters,loss_history = training.RMB_training_Psi(N_training,H,Model.loss_Floquet,Model.loss_Floquet_Phase)
 
-    #model = Model.RBM_Model(delta,Omega,phase,trained_parameters)
+    #model = Model.RBM_Model(N_training,delta,Omega,phase,trained_parameters)
     
     #print(i,delta,Omega,phase)
 
@@ -97,6 +98,12 @@ for i in [18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
     #plt.show()
     #plt.plot(np.abs(model.U_Floquet[:,:]))#print(U_)
     #plt.show()
+
+    #N_training= 512
+    #trained_parameters,loss_history = training.BM_training_FloquetStates(N_training,H)
+
+    #model = Model.RBM_Model(delta,Omega,phase,trained_parameters)
+    #trained_parameters,loss_history = RBM_training_FloquetStates(H):
     
 ########## TRAINING AGAINST THE RWA ###########################
 ########## TO OBTAIN AN INITIAL SET RBM PARAMETERS ################
@@ -237,7 +244,7 @@ for i in [18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
 
 
 
-    N_training = 512
+    N_training = 18394
 
     for i_ in range(N_training):
         loss_value, grads = Model.grad_fun(model,Model.loss)

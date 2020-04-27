@@ -11,15 +11,9 @@ def RMB_training_Psi(H,loss_psi,loss_psi_phase):
     
     import tensorflow as tf
     import numpy as np
-    import math as m
 
     ############### IMPORT WHAT WE NEED FROM THIS PROJECT #####################
     import model as Model
-    import matrixmanipulation as mp
-    import NN_model as NN_Model
-
-    CentralFloquetE        = np.zeros([2],dtype=np.float64)
-    CentralFloquetEVec     = np.zeros([H.dim,2],dtype=np.complex128)
 
     CentralFloquetE_RBM    = np.zeros([2],dtype=np.float64)
     CentralFloquetEVec_RBM = np.zeros([H.dim,2],dtype=np.complex128)
@@ -82,20 +76,20 @@ def RMB_training_Psi(H,loss_psi,loss_psi_phase):
     # y = tf.math.sign(tf.math.real(tf.reshape(model.U_Floquet,[2*model.dim]))).numpy() 
     # NNmodel, score  = NN_Model.NN_model(x,y)
 
-    UF = Model.Unitary_Matrix(model) 
+    #UF = Model.Unitary_Matrix(model) 
     #print("Hamiltonian in the dressed basis (RBM parametrisation): ")    
-    U_ = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
+    #U_ = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
     #print(U_)
 
-    if (UF.shape[1] > model.S):
-        index_ = int(model.S*((UF.shape[1]/model.S -1))/2)
-    else:   
-        index_ = 0
+    #if (UF.shape[1] > model.S):
+    #    index_ = int(model.S*((UF.shape[1]/model.S -1))/2)
+    #else:   
+    #    index_ = 0
         
-    CentralFloquetEVec_RBM[:,0] = UF[:,index_  ].numpy()
-    CentralFloquetEVec_RBM[:,1] = UF[:,index_+1].numpy()
-    CentralFloquetE_RBM[0] = tf.math.real(U_[index_     , index_    ]).numpy()
-    CentralFloquetE_RBM[1] = tf.math.real(U_[index_ + 1 , index_ + 1]).numpy() 
+    #CentralFloquetEVec_RBM[:,0] = UF[:,index_  ].numpy()
+    #CentralFloquetEVec_RBM[:,1] = UF[:,index_+1].numpy()
+    #CentralFloquetE_RBM[0] = tf.math.real(U_[index_     , index_    ]).numpy()
+    #CentralFloquetE_RBM[1] = tf.math.real(U_[index_ + 1 , index_ + 1]).numpy() 
 
 
     #print("Hamiltonian in the dressed basis (Floquet): ")    
@@ -118,10 +112,10 @@ def RMB_training_Psi(H,loss_psi,loss_psi_phase):
     #np.savetxt(file, [CentralFloquetE_RBM])
     
 
-    return CentralFloquetE_RBM,CentralFloquetEVec_RBM,loss_list_RWA,model.trainable_variables
+    return model.trainable_variables,loss_list_RWA
 
 
-def RBM_training_FloquetStates(H):
+def RBM_training_FloquetStates(N_training = 4,H):
 ####################################################################
 ####### FINDING THE FLOQUET OPERATOR TRAINING A RBM   ##############
 ####################################################################
@@ -140,12 +134,12 @@ def RBM_training_FloquetStates(H):
     #optimizer = tf.keras.optimizers.SGD(learning_rate=0.00001)
     loss_list = tf.Variable([],dtype=tf.float64)
 
-    CentralFloquetE_RBM2    = np.zeros([2],      dtype = np.float64)
-    CentralFloquetEVec_RBM2 = np.zeros([H.dim,2],dtype = np.complex128)
+    #CentralFloquetE_RBM2    = np.zeros([2],      dtype = np.float64)
+    #CentralFloquetEVec_RBM2 = np.zeros([H.dim,2],dtype = np.complex128)
 
 
-    f = 1.0
-    loss_list = tf.Variable([],dtype=tf.float64)
+    #f = 1.0
+    #loss_list = tf.Variable([],dtype=tf.float64)
     #for i in [16]:#range(1):
 
     #delta = 1.7
@@ -155,7 +149,7 @@ def RBM_training_FloquetStates(H):
     #trained_parameters = model.trainable_variables
     #model = Model.RBM_Model(delta,Omega,phase,trained_parameters_0)
     #model = Model.RBM_Model(H.delta,H.Omega,H.phase)
-    trained_parameters_0 = RMB_training_Psi(H,Model.loss_RWA,Model.loss_RWA_Phase)
+    #trained_parameters_0 = RMB_training_Psi(H,Model.loss_RWA,Model.loss_RWA_Phase)
     model = Model.RBM_Model(delta,Omega,phase,trained_parameters_0)
     
     loss_value, grads = Model.grad_fun(model,Model.loss)
@@ -178,23 +172,23 @@ def RBM_training_FloquetStates(H):
     #model = Model.RBM_Model(delta,Omega,phase,test_parameters_)
     #UF_0  = Model.Unitary_Matrix(model) 
     
-    CentralFloquetE[i,0]      = tf.math.real(model.E_Floquet[0]).numpy()
-    CentralFloquetE[i,1]      = tf.math.real(model.E_Floquet[1]).numpy() 
-    CentralFloquetEVec[i,:,0] = model.U_Floquet[:,0].numpy()
-    CentralFloquetEVec[i,:,1] = model.U_Floquet[:,1].numpy()
+    #CentralFloquetE[i,0]      = tf.math.real(model.E_Floquet[0]).numpy()
+    #CentralFloquetE[i,1]      = tf.math.real(model.E_Floquet[1]).numpy() 
+    #CentralFloquetEVec[i,:,0] = model.U_Floquet[:,0].numpy()
+    #CentralFloquetEVec[i,:,1] = model.U_Floquet[:,1].numpy()
 
 
 
-    N_training = 1024#18394
+    #N_training = 1024#18394
 
     for i_ in range(N_training):
         loss_value, grads = Model.grad_fun(model,Model.loss)
         loss_list = tf.concat([loss_list,[loss_value.numpy()]],axis=0)
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
         if(i_ == (N_training-1)):
-            UF = Model.Unitary_Matrix(model) 
+            #UF = Model.Unitary_Matrix(model) 
             ##        print(tf.abs(tf.matmul(UF,UF,adjoint_a=True)))
-            U_ = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
+            #U_ = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
             #print(U_)
             print("Final loss value (Floquet): ",loss_value.numpy())    
     
@@ -203,26 +197,27 @@ def RBM_training_FloquetStates(H):
     else:   
         index_ = 0
 
-    UF = Model.Unitary_Matrix(model) 
-    plt.plot(np.abs(UF[:,model.N_Floquet_UF*model.S:model.N_Floquet_UF*model.S+2]))#print(U_)
-    plt.show()
-    plt.plot(np.abs(model.U_Floquet[:,:]))#print(U_)
-    plt.show()
+    #UF = Model.Unitary_Matrix(model) 
+    #plt.plot(np.abs(UF[:,model.N_Floquet_UF*model.S:model.N_Floquet_UF*model.S+2]))#print(U_)
+    #plt.show()
+    #plt.plot(np.abs(model.U_Floquet[:,:]))#print(U_)
+    #plt.show()
     ##        print(tf.abs(tf.matmul(UF,UF,adjoint_a=True)))
-    U_ = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
-    plt.imshow(np.abs(U_.numpy()))
-    plt.show()
+    #U_ = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
+    #plt.imshow(np.abs(U_.numpy()))
+    #plt.show()
 
 
-    CentralFloquetE_RBM2[i,0]      = tf.math.real(U_[index_   , index_  ]).numpy()
-    CentralFloquetE_RBM2[i,1]      = tf.math.real(U_[index_+1 , index_+1]).numpy() 
-    CentralFloquetEVec_RBM2[i,:,0] = UF[:,index_].numpy()
-    CentralFloquetEVec_RBM2[i,:,1] = UF[:,index_+1].numpy()
+    #CentralFloquetE_RBM2[i,0]      = tf.math.real(U_[index_   , index_  ]).numpy()
+    #CentralFloquetE_RBM2[i,1]      = tf.math.real(U_[index_+1 , index_+1]).numpy() 
+    #CentralFloquetEVec_RBM2[i,:,0] = UF[:,index_].numpy()
+    #CentralFloquetEVec_RBM2[i,:,1] = UF[:,index_+1].numpy()
     
-    plt.plot(loss_list)
-    plt.show()
+    #plt.plot(loss_list)
+    #plt.show()
     
-    del model
+    #del model
+    return model.trainable_variables,loss_list
     
 
 
