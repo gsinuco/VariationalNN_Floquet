@@ -7,33 +7,79 @@
 \usepackage{bm}% bold math
 \usepackage{fancyvrb}
 
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{calrsfs}
 
-\newcommand{\ctu}{\cos(\theta_\uparrow)}
+\usepackage[utf8]{inputenc}
+\usepackage{calligra}
+\usepackage{calrsfs}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+\usepackage[mathscr]{euscript}
+
+%\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+%\usepackage[mathscr]{euscript}
 
 
-\begin{document}
+%\newcommand{\ctu}{\cos(\theta_\uparrow)}
+
+
 
 %\preprint{SoftwareX/Elsevier}
+\begin{document}
 
-\title{Restricted Boltzman Machine Variational parametrisation of the time-evolution operator of periodically driven systems}
+\title{Variational neural network parametrisation of the micromotion operator of periodically driven quantum systems}
 
-\author{German A. Sinuco Leon}
-\affiliation{School of Mathematics and Physical Sciences, University of Sussex, Falmer, BN1 9QH, United Kingdom.}
+%%\author{German A. Sinuco Leon}
+%%\affiliation{School of Mathematics and Physical Sciences, University of Sussex, Falmer, BN1 9QH, United Kingdom.}
 
 
 \date{\today}
 \begin{abstract}
-Here we explore the use of a Restricted Boltzman Machine to parametrise the Floquet states of harmonically driven qubit. The requiured complexity of the RBM with the number of Floquet manifolds. Solution of the Floquet spectrum converges from an approximated solution the Rotating Wave Approximation at. The training of the RBM presens all the standar challenges of slow convergency. Combination of loss functions . 
+Periodic driving to manipulate the state and properties of a large class of physical systems, solid-state and atomic systems. The descriptoin of periodically driven many-body quantum systems cannot be captured with simple perturbative expansion, and ), and accurate calculation of the time-evolution is required for experimental realisation of dynamical engineering regimes  or robust multquibit gates. Variatoin parametrisation of manybody wave function encode in neural network architectures has been recently introduced succesfuly for compressed representaiont of states with many degrees of freedom. Here we focus on the paramerisation of the Floquet operator of driven two-level systsem using a Restricted Boltzman Machine. We explore the range of strong blue off-resonant driving with strengh varying from weak to strong. The requiured complexity of the RBM with the number of Floquet manifoldand we adapat the to obtain a the Floquet spectrum converges from an approximated solution the Rotating Wave Approximation. The training of the RBM presens all well-known challenges of neural network parametrisation: vanishing gradient.... These results demonstrate explicitly the capabilities and challenges of RBM in describing harmonically driven systems.
 \end{abstract}
 
 %\pacs{Valid PACS appear here}% PACS, the Physics and Astronomy
                              % Classification Scheme.
  
-\keywords{Floquet, Quantum dynamics, Dressed states, Restricted Boltzman Machine, Machine Learning, Periodic driving, qubit}
-                              %display desired
+\keywords{Periodic driving, Floquet theory, Restricted Boltzman Machine}
 \maketitle
+
+
 \section{\label{sec:Introduction} Introduction}
 
+
+
+quantify the expressive power of NN teher is a gap in the understanding .Well understood data sets may offer insight, such as statisticcal physics, manybody physic, tensor networks and renormalisation.
+
+
+Traininin the machine tmay reveal correlation in the data with physicalmeaning. these larning task.
+
+RBM can paarmetirze complex functions of visible units. 
+
+
+
+Wave functinos of many-body systema nd away from equilibrum
+
+RBM representations of topological states
+
+
+These development raise questions about the expressive powe  of NN for physial problmes. 
+can rbm efficiently descrb periodicallly driven dystems. directe relation with exact diagonalisation techniques.
+
+
+rbm can provide compatct representation for a highly entangled quatum states that does not satisfy the entanblement area., with a number of parameters scaling polynomially with the system size. 
+
+
+conclussion: general connectino between rbm and tns in arxiv 1701.04831 constitues a brid in usin uch tecniques for harmonically driven systems.
+
+.
+
+
+
+In the last decade 
+Periodically driven system are almost present in quantum mechanics. both theoreical and experimentally relevant. 
+drastica modification of physical systems, including spectral signals \cite{} , 
 out-ofpequilibrium states driven by harmonic forces, transformation of states in . Dynamical decoupling with periodic drivings (several harmonics as in the quantum coputing talk I saw), or multiquibe gates by multiple harmonci forces, to floque topological insulators and frequency/time-domain quantum simulations.
 
 The time-evolution operator is key, either to define the time-evolution or for defniniton of effective Hamiltonians. both of them cna be written interms of the Floquet states. Floquet states perturbatoin theory, RWA, Bloch-siegart, ... expansion.... All this approximaiton and general solution are important to uderststand, fore example. 
@@ -54,99 +100,139 @@ The docume is as follows. In Section \ref{sec:FloquetHamiltonian} I present the 
 
 \section{\label{sec:FloquetBloch} Floquet formalism}
 
-The openMMF library is developed to calculate the time-evolution operator, $U(t',t), ~ t'>t$, of systems whose Hamiltonian has the form:
+Periodically driven quantum systems are described by a Hamiltonian of the form:
 \begin{equation}
-H = \sum_{i,j}^D E_{i,j} \left| i\right\rangle \left\langle j \right| + \sum_{i,j}^D \sum_{\ell=1}^N \sum_{n \in Z} V_{i,j}^{\ell,n} e^{i n \omega_\ell t} \left| i\right\rangle \left\langle j \right| + \textrm{h.c.}
+H(t) = \sum_{i,j}^D E_{i,j} \left| i\right\rangle \left\langle j \right| + \sum_{i,j}^D \sum_{n \in Z} V_{i,j}^{n} e^{i n \omega t} \left| i\right\rangle \left\langle j \right| + \textrm{h.c.}
 \label{eq:Hamiltonian}
 \end{equation}
-where $D$ is the dimension of the Hilbert space, ${E_{i,j}}$ defines the static component of the Hamiltonian $H$, $V_{i,j}^{\ell,n}$ is the coupling between the states $i$ and $j$ oscillating at frequency $n \omega_{\ell}$ (i.e. the $n$-th harmonic of the $\ell$-th fundamental frequency $\omega_{\ell}$) and $N$ is the number of incommensurately frequencies.
+where $D$ is the dimension of the Hilbert space, ${E_{i,j}}$ defines the static component of the Hamiltonian, $V_{i,j}^{\ell,n}$ is the coupling between the states $i$ and $j$ oscillating at frequency $n \omega$ (i.e. the $n$-th harmonic of the fundamental frequency $\omega$). 
 
-To calculate the time-evolution operator we generalise the Rotating (or Resonant) Wave Approximation (RWA), taking into account the complex time dependence of eq. (\ref{eq:Hamiltonian}). For this, we rephrase the problem in terms of building a time-dependent unitary transformation, $U_F(t)$ to a new basis $\{\left| \bar{i} \right\rangle\}$, that leads to a \textit{time-independent} and diagonal Hamiltonian, $\bar{H}$. After applying the standard quantum-mechanical transformation rule to the Schr\"{o}dinger equation \cite{chu1985recent,PhysRevA.81.063626}, this condition becomes:
-\begin{eqnarray}
- U_F^\dagger(t) \left[ H(t) - i \hbar \partial_t \right] U_F(t)  &=& \sum_{\bar{i}} \bar{E}_{\bar{i}} \left| \bar{i} \right\rangle \left\langle \bar{i} \right|
+Solutions to the corresponding Schr\"odinger can be build after finding a priviliged frame of reference where the transformed Hamiltonian is time-independent and diagonal \cite{}. Thus, we are looking for a time-dependent unitary transformation, $U_F(t)$, that satisfies:
+\begin{equation}
+ U_F^\dagger(t) H(t)  U_F(t) - i \hbar  U_F^\dagger(t) \partial_t  U_F(t) =  \sum_{\bar{i}} \bar{E}_{\bar{i}} \left| \bar{i} \right\rangle \left\langle \bar{i} \right|
 \label{eq:Hdressed}
-\end{eqnarray}
-
-Importantly, in the basis of states defined by this transformation the time evolution operator is diagonal and has the form:
-\begin{equation}
-\bar{U}(t',t) = \sum_{\bar{i}} e^{-i \bar{E}_{\bar{i}} (t'-t)} \left| \bar{i} \right\rangle \left\langle \bar{i} \right|
-\label{eq:dressedtimeevolution}
 \end{equation}
-which let us to calculate the time evolution operator in the original basis $\left\{ \left| i\right\rangle\right\}$, just by inverting the transformation $U_F(t)$, according to \cite{PhysRevA.81.063626}:
-\begin{equation}
-U(t',t) = U_F(t') \bar{U}(t',t) U_F(t)
-\label{eq:baretimeevolution}
-\end{equation}
+where $\bar{E}_{\bar{i}}$ with $\bar{i} \in [1,D]$ is the set of eigenstates in the frame of refence where the Hamiltonian is static. In this frame of reference, the time-evolution operator is diagonal and the inverse of $U_F(t)$ can be applied to obtain the time-evolution operator in the original basis. 
 
-To formulate a fully defined computational problem, we express the micromotion operator $U_F(t)$ as the multifrequency Fourier series \cite{ho1983semiclassical}:
+Considering the time-dependence of the coupling terms in the Hamiltonian, we parametrise $U_F(t)$ as a Fouries series of the form \cite{ho1983semiclassical}:
 \begin{equation}
-U_F(t) = \sum_{\vec{n}} U_{i,\bar{i}}^{\vec{n}} e^{-i\vec{\omega} \cdot \vec{n}t} \left| i \right\rangle \left\langle \bar{i} \right|
+U_F(t) = \sum_{n\in Z} u_{i,\bar{i}}^{n} e^{-in\omega t} \left| i \right\rangle \left\langle \bar{i} \right|
 \label{eq:micromotionexpansion}
 \end{equation}
-where $\vec{\omega} = (\omega_1,\omega_2,\ldots,\omega_N)$ and $\vec{n}$ is a $N$-dimensional vector of integers. After plugging this expansion in eq. (\ref{eq:Hdressed}) and performing an integral over time, we obtain a fully defined eigenproblem for the eigenvalues $\bar{E}_{\bar{i}}$ and Fourier components of the unitary transformation $U_{i,\bar{E}}^{\vec{n}}$:
+
+Using this expansion in the transformation rule Eq. (\ref{eq:Hdressed}) and taking into account the orthonormality of the Fourier basis, we obtain the eigenvalue problem:
+\begin{eqnarray}
+\bar{E}_{\bar{i}}U^{n}_{i,\bar{i}}&=&\sum_{i,j=1}^{D} \sum_{n\in Z}(E_{i,j} - \delta_{i,j} n \hbar \omega)U^{n}_{j,\bar{i}} \nonumber \\
+&&+ \sum_{j=1}^D \sum_{m\in Z} \left[ V^{m}_{i,j} U^{n+m}_{j,\bar{i}} + V^{m*}_{ji} U^{m-n}_{j,\bar{i}}\right]
+\label{eq:floqueteigenproblem}
+\end{eqnarray}
+which lead us to a finite matrix representation after truncating the sums in eq. (\ref{eq:micromotionexpansion}). 
+
+For concretness, in this paper we consider a harmonically driven qubit with the Hamiltonian:
+\begin{equation}
+H = \frac{\hbar \omega_0}{2} \sigma_z + \frac{\hbar \Omega}{2} \sigma_x \cos (\omega t + \phi)
+\end{equation}
+with the Pauli matrices $\sigma_i$ with $i\in[x,y,z]$ \cite{}.
+
+In this case, the Fourier components of the unitary transformation $U_F(t)$ are the eigenvectors of the matrix:
+
 \begin{widetext}
 \begin{equation}
-\sum_j(E_{i,j} - \hbar \vec{n} \cdot \vec{\omega})U^{\vec{n}}_{j,\bar{i}} + \sum_{j} \sum_{\vec{m}} \left[ V^{\vec{m}}_{i,j} U^{\vec{n}+\vec{m}}_{j,\bar{i}} + V^{\vec{m}*}_{ji} U^{\vec{m}-\vec{n}}_{j,\bar{i}}\right] = \bar{E}_{\bar{i}}U^{\vec{n}}_{i,\bar{i}}
-\label{eq:multimodeeigenproblem}
+\mathcal{H} = \hbar \omega_0 \begin{pmatrix}
+ \frac{1}{2} \sigma_z + 3 \bar{\omega} I & e^{i\phi}\frac{\bar{\Omega}}{4} \sigma_x & 0 & 0 & 0 & 0 &0 \\
+ e^{-i\phi}\frac{\bar{\Omega} }{4} \sigma_x &  \frac{1}{2} \sigma_z + 2 \bar{\omega}I & e^{i\phi}\frac{\bar{\Omega}}{4} \sigma_x & 0 & 0 & 0 & 0 \\
+0& e^{-i\phi}\frac{\bar{\Omega} }{4} \sigma_x &  \frac{1}{2} \sigma_z + \bar{\omega}I & e^{i\phi}\frac{\bar{\Omega}}{4} \sigma_x & 0 & 0 & 0  \\
+0 & 0& e^{-i\phi}\frac{\bar{\Omega} }{4} \sigma_x &  \frac{1}{2} \sigma_z& e^{i\phi}\frac{\bar{\Omega}}{4} \sigma_x & 0 & 0 \\
+0 & 0 & 0& e^{-i\phi}\frac{\bar{\Omega} }{4} \sigma_x &  \frac{1}{2} \sigma_z -  \bar{\omega}I & e^{i\phi}\frac{\bar{\Omega}}{4} \sigma_x & 0 \\
+0 & 0 & 0 & 0& e^{-i\phi}\frac{\bar{\Omega} }{4} \sigma_x &  \frac{1}{2} \sigma_z - 2 \bar{\omega}I & e^{i\phi}\frac{\bar{\Omega}}{4} \sigma_x   \\
+0 & 0 & 0 & 0 & 0& e^{-i\phi}\frac{\bar{\Omega} }{4} \sigma_x &  \frac{1}{2} \sigma_z - 3 \bar{\omega}I 
+\end{pmatrix}
+\begin{pmatrix}
+\frac{1}{2}\\
+0 \\
+0 \\
+0 \\
+0 \\
+0 \\
+0  
+\end{pmatrix}
 \end{equation}
 \end{widetext}
-where the couplings $V_{i,j}^{\ell,n}$ define $V_{i,j}^{\vec{n}}$ and the vector $\vec{n} = (0,\ldots , m, \ldots, 0)$ with the value $m$ located at the $\ell-$th position. To obtain a finite matrix representation of this problem we truncate the sum over the number of modes of the Fourier expansion eq. (\ref{eq:micromotionexpansion}). Below, in Appendix A, we show an specific example of the shape of the matrix for a bichromatic driven problem. 
 
-This formulation to calculate the time-evolution operator is equivalent to the multimode Floquet representation of the Hamiltonian that introduces the extended Hilbert space $\left| E_i,\vec{n} \right\rangle$  \cite{shirley1965solution,ho1983semiclassical,verdeny2016quasi}. However, the semiclassical description presented here makes emphasis in the experimentally accessible states, which usually are used to express the static part of the Hamiltonian eq.  (\ref{eq:Hamiltonian}). 
+The unitary transformation is of the form.
 
-In this paper we consider the Hamiltonian of quaibit system:
 
+However, due to the symmetry of the, we can select any set of and. It is natrual to select the central columns and repeat, we have to  parametrise only a reduced set of the elemtnes of the matrix.
+
+
+In the regime of off-resonant + weak-to-strong driving. More precisely, our numerical results are obtained for the parameters $\omega=1.7 \omega_0$ and the Rabi frequency $\Omega \in [ 0,10 ]\times \omega_0$. Figure presents the energy gap between the dressed states as a function of the Rabi frequency $\Omega$  and the eigen states of selected parameters.  
+
+The wavefunction has the symmetry, $n \rightarrow n+m$,  :
 \begin{equation}
-H = \hbar \omega_0 S_z + \hbar \Omega S_x \cos (\omega t + \phi)
-\end{equation}
-
-In the regime of off-resonant + weak-to-strong driving. More precisely, my numerical results are obtained for the parameters $\omega=1.7 \omega_0$ and a Rabi frequency $\Omega \in \[0,10\]\times \omega_0$. Figure presents the energy gap between the dressed states as a function of the Rabi frequency $\Omega$  and the eigen states of selected parameters.  
-
-The wavefucntion has the symmetry:
-\begin{equaiton}
-some symmetry
+U_{i,\bar{i}}^n = U_{i,\bar{i}}^{m+n}
 \end{equation}
 which is used to reduce the number of paramerter below.
 
-\section{RBM parametrisation of the micromotion operator}
+The 
 
-Any wavefumction of the form:
+\section{Parametrisation of the micromotion operator}
 
+The dressed states defined by $U_F$ are time-dependent superposition of the elements of the basis:
 \begin{equation}
 \left| \bar{i} \right\rangle = \sum_{j,n} u^{n}_{j,\bar{i}} e^{i n \omega t}\left|j \right\rangle
 \end{equation}
+with the coefficientes of $U_F$. 
 
-The coeffecients of the expansion can be parametrised using:
+Following the Troyer Calero ... and tohre, we parametrise theses elements with a pair of Restricted Boltzman Machines (RBM) that define their amplitude and phase. Simple generalisation of the RBM for spin systems. In this case, the state of each cell of the visible layer is given by a set of integers that identify the element .  $\sigma = {j,\bar{i},n}$, the projection of angular momentum of the bare and dressed states, and $n\in Z$ the Floquet manifold index. The state of the hidden layer is $\boldsymbol{h} = (h_1,h_2,h_3,\ldots,h_M)$ with the binary variables $h_i \in {-1,1}$ for $i=1,\ldots M$. 
+
+The micromotion fourier components can be parametrized by:
 \begin{equation}
-u^{n}_{j,\bar{i}} = \sqrt{\frac{P{\lambda}(\sigma)}{Z}} \exp(\phi_{\mu}(\sigma))
+u^{n}_{j,\bar{i}} = \sqrt{\frac{P_{\lambda}(\boldsymbol{\sigma})}{Z}} \exp(\phi_{\mu}(\boldsymbol{\sigma}))
+\end{equation}
+with the marginal probabilities:
+\begin{equation}
+P_{\kappa}(\boldsymbol{\sigma}) = \sum_{\{\boldsymbol{h}\}} p_{\kappa}(\boldsymbol{\sigma},\boldsymbol{h})
+\end{equation}
+obtained from the ... probability.
+\begin{equation}
+p_{\kappa}(\boldsymbol{\sigma},\boldsymbol{h}) = \exp (\boldsymbol{b}_{\boldsymbol{\sigma}} \cdot \boldsymbol{\sigma} + \boldsymbol{c}_{\boldsymbol{h}} \cdot \boldsymbol{h} + \boldsymbol{h}^T \cdot W_{\boldsymbol{h},\boldsymbol{\sigma}} \cdot \boldsymbol{\sigma})
+\end{equation}
+for $\kappa={\lambda}$ and $\mu$.
+
+In this case, the symbol $\boldsymbol{\sigma}$ is an array of numbers that 	labels the element of the Floquet matrix. For the driven two level system, we choose $\boldsymbol{\sigma} = i,\bar{i},1/n $, with $i,\bar{i} \in {-1/2,1/2}$ the projection of angular momentum of the bare and dressed states, and $n\in Z$ the Floquet manifold index.
+
+The single layer RBM allows us to obtain an analytical expression for the marginal probabilities:
+\begin{equation}
+P_{\kappa}(\boldsymbol{\sigma}) = \exp(\boldsymbol{b}_{\boldsymbol{\sigma}}\cdot\boldsymbol{\sigma}) \prod_{j=1}^{h} \cosh(\boldsymbol{c}_j+ \boldsymbol{W}_j\cdot\boldsymbol{\sigma})
 \end{equation}
 
-where
+The cost function can be build from our objective of diagonaliing the matrix. We define the distance of matrix from a diagonal form ...
 \begin{equation}
-P_{\kappa}(\sigma) = \sum_{\vec{h}} p_{\kappa}(\sigma,\vec{h})
+\left\|\mathcal{L}\right\| = \sum_{i} \left| \sum_{j} |\mathcal{H}_{j,i}| - |\mathcal{H}_{i,i}| \right|^{2}
 \end{equation}
+which is sum of the square of differences between the element of the diagonal and the sum of the norms along each column of the transformed Hamiltonian. 
 
-with 
-\begin{equation}
-p_{\kappa}(\sigma,\vec{h}) = exp (\vec{b}_{\vec{\sigma}} \cdot \vec{\sigma} + \vec{c}_{\vec{h}} \cdot \vec{h} + \vec{h}^t \cdot W^{\vec{h}}_{\vec{\sigma}} \cdot \vec{\sigma})
-\end{equation}
+The parameters are then 
+
 
 \section{\label{sec:RBMFloquetStates} RBM parametrisation of Floquet states} 
 
-The numerically exact Floquet states (the fourier coeffiecients of expansion....) straigh forward by diagonalisin eq \cite{mi, floquet}.
+As a first test of the power of representation of the RBM, we evaluate the of the micromotion operator evaluated numerically. This is done by diagonalising the matrix Eq. (\ref{}) and selecting the central group of dressed states.
 
-teh Kull-lll loss function:
-\begin{equaiton}
+Since the micromotion opertor can be interpretated as the amplitued of probability in the extended Floquet basis, we adjust the parameters $\boldsymbol{b}, \boldsymbol{h}, \boldsymbol{W} $ using the Kull-lll loss function:
+\begin{equation}
 k = \sum_i p_i \log \frac{p_i}{p_i}
 \end{equation}
+with $p_i = |u_{j,i}|^2$
 
-to train both RBm parametrisation of the amplitude and the phase, I loop swapping one, starting of a random initiailization of the RBM parameters. 
+The training starts of wit a random distribution of all parameters with choosen as ..to train both RBm parametrisation of the amplitude and the phase, I loop swapping one after the other, starting of a random initiailization of the RBM parameters. The parameers of the amplitude are choosen as randon, while 
 
 Typical training problems and parameters. Accuracy. 
 
 
 
-\section{\label{sec:RBMFloquetSpectrum} Evaluating the Floquet spectrum using aRBM}
+
+\section{\label{sec:RBMFloquetSpectrum} Floquet spectrum and micromotion}
 
 Finding the full spectrum of quasienergies and the .
 
@@ -206,164 +292,10 @@ This starting point for exploratioon of the use of parametrisatio for more compl
 
 
 \section*{Acknowledgements}
-We acknowledge fruitful comments and input from Dr. Juan Sebastian Totero Gongora. This work has been supported by the School of Mathematics and Physics of the University of Sussex.
+We acknowledge fruitful comments and input from Dr. Juan Sebastian Totero Gongora. This work has been supported by the University of Sussex.
 
 \section*{Appendix A: Restriced Boltzman Machine parametrisation of $u^n_{j,\bar{i}}$}
 \section*{Appendix B: Typical and no so typical training results}
 \section*{Appendix A: Typical example of the matrix representation of the multimode Hamiltonian}
-
-A typical shape of the matrix representation of the RHS of eq. (\ref{eq:multimodeeigenproblem}). Here we consider a static system $H_0$ driven by the three frequencies: $\omega_1,2\omega_1,\omega_2$. The integer array describing this set of frequencies must be $(0,2,1)$. For the two fundamental frequencies, the number of Fourier modes in the decomposition of the micromotion operator is chosen to be $N_F=3$. With this, the driving of  $\omega_1$ and its first harmonic leads to the matrix:
-
-\begin{widetext}
-\[
-\mathcal{H}_1 = \begin{pmatrix}
- H_0 + 3 \hbar \omega_1 & V^{1,1} & V^{1,2} & 0 & 0 & 0 &0 \\
-  V^{1,1\dagger} & H_0 + 2 \hbar  \omega_1 & V^{1,1} & V^{1,2} & 0 & 0 & 0 \\
- V^{1,2 \dagger} &  V^{1,1\dagger} & H_0 + \hbar \omega_1 & V^{1,1} & V^{1,2} & 0 & 0 \\
- 0 &V^{1,2 \dagger} &  V^{1,1 \dagger} & H_0  & V^{1,1}  & V^{1,2} & 0  \\
- 0 & 0 &V^{1,2 \dagger} &  V^{1,1 \dagger} & H_0 - \hbar \omega_1 & V^{1,1} & V^{1,2}   \\
- 0 & 0 & 0 &V^{1,2 \dagger} &  V^{1,1 \dagger} & H_0 - 2 \hbar \omega_1 & V^{1,1} \\
- 0 & 0 & 0 & 0 &V^{1,2 \dagger} &  V^{1,1 \dagger} & H_0 - 3 \hbar \omega_1 
-\end{pmatrix}
-\]
-\noindent
-and the full matrix results in:
-\[
-\mathcal{H} = \begin{pmatrix}
- \mathcal{H}_1 + 3 \hbar \omega_2 & \mathcal{V}^{2,1} & 0 & 0 & 0 & 0 &0 \\
-  \mathcal{V}^{2,1\dagger} & \mathcal{H}_1 + 2 \hbar  \omega_2 & \mathcal{V}^{2,1} & 0 & 0 & 0 & 0 \\
- 0 &  \mathcal{V}^{2,1\dagger} & \mathcal{H}_1 + \hbar \omega_2 & \mathcal{V}^{2,1} & 0 & 0 & 0 \\
- 0 & 0 &  \mathcal{V}^{2,1 \dagger} & \mathcal{H}_1  & \mathcal{V}^{2,1}  &0 & 0  \\
- 0 & 0 & 0 &  \mathcal{V}^{2,1 \dagger} & \mathcal{H}_1 - \hbar \omega_2 & \mathcal{V}^{2,1} & 0   \\
- 0 & 0 & 0 &0 &  \mathcal{V}^{2,1 \dagger} & \mathcal{H}_1 - 2 \hbar \omega_2 & \mathcal{V}^{2,1} \\
- 0 & 0 & 0 & 0 & 0 &  \mathcal{V}^{2,1 \dagger} & \mathcal{H}_1 - 3 \hbar \omega_2
-\end{pmatrix}
-\]
-with
-\[
-\mathcal{V}^{2,1} = \begin{pmatrix}
-  V^{2,1} & 0 & 0 & 0 & 0 & 0 &0 \\
-  0&V^{2,1} & 0 & 0 & 0 & 0 & 0  \\
-  0&0&V^{2,1} & 0 & 0 & 0 & 0  \\
-  0&0&0&V^{2,1} & 0 & 0 & 0 \\
-  0&0&0&0&V^{2,1} & 0 & 0  \\
-  0&0&0&0&0&V^{2,1} & 0 \\
-  0&0&0&0&0&0&V^{2,1}  
-\end{pmatrix}
-\]
-\end{widetext}
-
-\section*{C++ wrapper}
-The library includes wrappers to use with C++. The interfaces to the Fortran subroutines  share the name of the aimed function with the appended particle \verb _C_ .  The full set of wrappers are declared in the file \verb MultimodeFloquet.h  , which must be included in the C++ source code. As an example we present  the C++  codes required to evaluate the time-evolution of a driven qubit. The library distribution includes Fortran and C++ examples.
-
-\begin{widetext}
-\begin{verbatim}
-
-#include <iostream>
-#include <complex>
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
-
-using namespace std;
-typedef std::complex<double> dcmplx;
-
-#include "MultimodeFloquet.h"
-
-extern "C" int h_floquet_size;
-
-int main(){
-
-  atom_c id;
-  int info,N_;
-  int jtotal;
-  char name[]     = "qubit";
-  char manifold[] = "U";
-
-  int r,m,l;
-  int d_bare,total_frequencies;
-
-  double t1,t2;
-
-  info   = 0;
-  jtotal = 2;
-  floquetinit_c(&id,name,&info);
-
-  d_bare = id.d_bare;
-
-  dcmplx * U_AUX = new dcmplx [d_bare*d_bare];
-
-  int nm = 2;
-  int * modes_num = new int [nm];
-
-  modes_num[0] = 1;
-  modes_num[1] = 1;
-  
-  total_frequencies = 0;
-  for(r=0;r<nm;r++){
-    total_frequencies += modes_num[r];
-  }
-  
-  mode_c * fields = new mode_c [total_frequencies];
-  
-
-  // --- SET DRIVING PARAMETERS   
-  fields[0].x    = 0.0;
-  fields[0].y    = 0.0;
-  fields[0].z    = 2.0;
-  fields[0].phi_x = 0.0;
-  fields[0].phi_y = 0.0;
-  fields[0].phi_z = 0.0;
-  fields[0].omega = 0.0;
-  fields[0].N_Floquet = 0;
-
-  fields[1].x     = 4.0;
-  fields[1].y     = 0.0;
-  fields[1].z     = 0.0;
-  fields[1].phi_x = 0.0;
-  fields[1].phi_y = 0.0;
-  fields[1].phi_z = 0.0;
-  fields[1].omega = 2.0;
-  fields[1].N_Floquet = 3;
-
-  // --- SET THE HAMILTONIAN COMPONENTS
-  sethamiltoniancomponents_c_
-               (&id,&nm,&total_frequencies,modes_num,fields,&info);
-    
-  // --- BUILD THE MULTIMODE FLOQUET MATRIX AND  FIND ITS SPECTRUM     
-  multimodefloquetmatrix_c_
-   (&id,&nm,&total_frequencies,modes_num,fields,&info);
-
-  double * e_floquet = new double [h_floquet_size];
-  dcmplx * U_F =  new dcmplx [h_floquet_size*h_floquet_size];
-    
-  lapack_fulleigenvalues_c_
-   (U_F,&h_floquet_size,e_floquet,&info);
-// the diagonalization is done with the internal (Fortran)
-// Hamiltonian (H_FLOQUET) and the calculated
-// U_F is the transformation that diagonalise this Hamiltonian
-// On the Fortran side, H_FLOQUET is deallocated after
-// diagonalization. 
-
-   //--- EVALUATE TIME-EVOLUTION OPERATOR IN THE BARE BASIS
-
-   N_ = 256;
-   t1= 0.0;
-   for(r=1;r<N_;r++){      
-     t2 = r*100.0/N_;
-     multimodetimeevolutionoperator_c_
-       (&h_floquet_size,&nm,modes_num,U_F,e_floquet,&d_bare,fields,&t1,&t2,U_AUX,&info);
-     for(l=0;l<d_bare*d_bare;l++) p_avg[l] = pow(abs(U_AUX[l]),2);
-     write_matrix_c_(p_avg,&d_bare);           
-   }
-    delete(e_floquet);    
-    delete(U_F);
-  }
-  
-  return 0;
-}
-
-\end{verbatim}
-\end{widetext}
 
 \end{document}

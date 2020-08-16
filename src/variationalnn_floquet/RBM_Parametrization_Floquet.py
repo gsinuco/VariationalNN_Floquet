@@ -53,7 +53,7 @@ CentralFloquetEVec_RBM = np.zeros([N,H.dim,2],dtype=np.complex128)
 loss_list_RWA          = tf.Variable([],dtype=tf.float64)
 
 
-N_training = 128
+N_training = 4
 N_tr_ph    = 2
 N_tr_rho   = 2
 
@@ -62,60 +62,117 @@ file = open('RBM_TrainingFloquet.dat','wb')
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.1, beta_1=0.9, beta_2=0.999, 
                                      epsilon=1e-07, amsgrad=False,name='Adam')
 #optimizer = tf.keras.optimizers.SGD(learning_rate=0.1)
-
-for i in [18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
-    
-    N_training = 4
-    
+#%%
+for i in [16,18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
+        
     delta = 1.7
     Omega = 10.0*i/N
     phase = np.arctan(1.0)/4.1341341
     
-    #N_training = 64
-    #H = Model.Hamiltonian(delta,Omega,phase)
-    #trained_parameters,loss_history = training.RMB_training_Psi(N_training,H,Model.loss_Floquet,Model.loss_Floquet_Phase)
-
-    #model = Model.RBM_Model(N_training,delta,Omega,phase,trained_parameters)
+    print(i,delta,Omega,phase)
     
-    #print(i,delta,Omega,phase)
+    N_training = 256
+    H = Model.Hamiltonian(delta,Omega,phase)
 
-    #UF = Model.Unitary_Matrix(model) 
-    #print("Hamiltonian in the dressed basis (RBM parametrisation): ")    
-    #U_ = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
-    #print(U_)
+    ###### FITTING A WAVEFUNCTION:
+    ###### loss_Floquet,loss_Floquet_phase : fits the Floquet wavefunction
+    ###### loss_RWA,loss_RWA_phase : fits the RWA wavefunction
+    trained_parameters,loss_history = training.RMB_training_Psi(N_training,H,
+                                                                Model.loss_Floquet,
+                                                                Model.loss_Floquet_Phase)
+    #trained_parameters,loss_history = training.RMB_training_Psi(N_training,H,
+    #                                                             Model.loss_RWA,
+    #                                                             Model.loss_RWA_Phase)
 
-    #if (UF.shape[1] > model.S):
-    #    index_ = int(model.S*((UF.shape[1]/model.S -1))/2)
-    #else:   
-    #    index_ = 0
+    model = Model.RBM_Model(delta,Omega,phase,trained_parameters)
+    
+    UF = Model.Unitary_Matrix(model) 
+    U_ = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
+
+    if (UF.shape[1] > model.S):
+        index_ = int(model.S*((UF.shape[1]/model.S -1))/2)
+    else:   
+        index_ = 0
         
-    #CentralFloquetEVec_RBM[i,:,0] = UF[:,index_  ].numpy()
-    #CentralFloquetEVec_RBM[i,:,1] = UF[:,index_+1].numpy()
-    #CentralFloquetE_RBM[i,0] = tf.math.real(U_[index_     , index_    ]).numpy()
-    #CentralFloquetE_RBM[i,1] = tf.math.real(U_[index_ + 1 , index_ + 1]).numpy() 
+    CentralFloquetEVec_RBM[i,:,0] = UF[:,index_  ].numpy()
+    CentralFloquetEVec_RBM[i,:,1] = UF[:,index_+1].numpy()
+    CentralFloquetE_RBM[i,0] = tf.math.real(U_[index_     , index_    ]).numpy()
+    CentralFloquetE_RBM[i,1] = tf.math.real(U_[index_ + 1 , index_ + 1]).numpy() 
 
-    #plt.plot(np.abs(UF[:,model.N_Floquet_UF*model.S:model.N_Floquet_UF*model.S+2]))#print(U_)
-    #plt.show()
-    #plt.plot(np.abs(model.U_Floquet[:,:]))#print(U_)
-    #plt.show()
+    plt.plot(np.abs(UF[:,model.N_Floquet_UF*model.S:model.N_Floquet_UF*model.S+2]))
+    plt.show()
 
-    #N_training= 512
-    #trained_parameters,loss_history = training.BM_training_FloquetStates(N_training,H)
+    plt.plot(np.abs(model.U_Floquet[:,:]))
+    plt.show()
 
-    #model = Model.RBM_Model(delta,Omega,phase,trained_parameters)
-    #trained_parameters,loss_history = RBM_training_FloquetStates(H):
+    plt.imshow(np.abs(U_.numpy()))
+    plt.show()
     
+
+    
+#%%    
+for i in [16]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
+        
+    delta = 1.7
+    Omega = 10.0*i/N
+    phase = np.arctan(1.0)/4.1341341
+
+    
+    N_training= 12000
+    trained_parameters,loss_history = training.RBM_training_FloquetStates(N_training,H)
+
+    model = Model.RBM_Model(delta,Omega,phase,trained_parameters)
+
+    UF = Model.Unitary_Matrix(model) 
+    U_ = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
+
+    if (UF.shape[1] > model.S):
+        index_ = int(model.S*((UF.shape[1]/model.S -1))/2)
+    else:   
+        index_ = 0
+        
+    CentralFloquetEVec_RBM[i,:,0] = UF[:,index_  ].numpy()
+    CentralFloquetEVec_RBM[i,:,1] = UF[:,index_+1].numpy()
+    CentralFloquetE_RBM[i,0] = tf.math.real(U_[index_     , index_    ]).numpy()
+    CentralFloquetE_RBM[i,1] = tf.math.real(U_[index_ + 1 , index_ + 1]).numpy() 
+
+    plt.plot(np.abs(UF[:,model.N_Floquet_UF*model.S:model.N_Floquet_UF*model.S+2]))
+    plt.show()
+
+    plt.plot(np.abs(model.U_Floquet[:,:]))
+    plt.show()
+
+    plt.imshow(np.abs(U_.numpy()))
+    plt.show()
+   
+    
+#%%
 ########## TRAINING AGAINST THE RWA ###########################
 ########## TO OBTAIN AN INITIAL SET RBM PARAMETERS ################
 ########## THIS IS EQUIVALENT TO RECONSTRUCT A SET OF WAVE FUNCTIONS ######
- 
 
+
+
+for i in [14,16,18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
+        
+    delta = 1.7
+    Omega = 10.0*i/N
+    phase = np.arctan(1.0)/4.1341341
+    
+    print(i,delta,Omega,phase)
+    
+    N_training = 4
+    H = Model.Hamiltonian(delta,Omega,phase)
+ 
     model = Model.RBM_Model(delta,Omega,phase)
     
     CentralFloquetEVec[i,:,0] = model.U_Floquet[:,0].numpy()
     CentralFloquetEVec[i,:,1] = model.U_Floquet[:,1].numpy()
     CentralFloquetE[i,0]      = tf.math.real(model.E_Floquet[0]).numpy()
     CentralFloquetE[i,1]      = tf.math.real(model.E_Floquet[1]).numpy() 
+
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.1, beta_1=0.9, beta_2=0.999, 
+                                     epsilon=1e-07, amsgrad=False,name='Adam')
 
     for j in range(N_training):#[0,1,2,3,5]:
 
@@ -137,11 +194,6 @@ for i in [18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
             optimizer.apply_gradients(zip(grads, model.trainable_variables[3:6]))
 
 
-    # Modelling the phase distribution (0,pi) as a neural network
-    # x = model.x[1:133,:].numpy()
-    # y = tf.math.sign(tf.math.real(tf.reshape(model.U_Floquet,[2*model.dim]))).numpy() 
-    # NNmodel, score  = NN_Model.NN_model(x,y)
-
     UF = Model.Unitary_Matrix(model) 
     #print("Hamiltonian in the dressed basis (RBM parametrisation): ")    
     U_ = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
@@ -157,33 +209,6 @@ for i in [18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
     CentralFloquetE_RBM[i,0] = tf.math.real(U_[index_     , index_    ]).numpy()
     CentralFloquetE_RBM[i,1] = tf.math.real(U_[index_ + 1 , index_ + 1]).numpy() 
 
-    plt.plot(np.abs(UF[:,model.N_Floquet_UF*model.S:model.N_Floquet_UF*model.S+2]))#print(U_)
-    plt.show()
-    plt.plot(np.abs(model.U_Floquet[:,:]))#print(U_)
-    plt.show()
-
-
-    #print("Hamiltonian in the dressed basis (Floquet): ")    
-    #U_ = tf.math.real(tf.transpose(tf.math.conj(model.U_Floquet))@model.H_TLS@model.U_Floquet)
-    #print(U_)
-    
-    
-    #np.savetxt(file, [model.delta,model.Omega,model.phase])
-    #np.savetxt(file, [model.hidden_n,model.hidden_ph])
-    #np.savetxt(file, [N_training ,N_tr_ph, N_tr_rho])
-    #np.savetxt(file, [model.W_n.numpy()])
-    #np.savetxt(file, [model.b_n.numpy()])
-    #np.savetxt(file, [model.c_n.numpy()])
-    #np.savetxt(file, [model.W_ph.numpy()])
-    #np.savetxt(file, [model.b_ph.numpy()])
-    #np.savetxt(file, [model.c_ph.numpy()])
-    #np.savetxt(file, [model.U_Floquet.numpy()])
-    #np.savetxt(file, [model.E_Floquet.numpy()])
-    #np.savetxt(file, [CentralFloquetEVec_RBM[i,:,:]])
-    #np.savetxt(file, [CentralFloquetE_RBM])
-    
-
-
 
 ####################################################################
 ####################################################################
@@ -193,10 +218,7 @@ for i in [18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
 ####################################################################
 ####### FINDING THE FLOQUET OPERATOR TRAINING A RBM   ##############
 ####################################################################
-#%%
-    #trained_parameters_0 = [model.W_n,model.b_n,model.c_n,model.W_ph,model.b_ph,model.c_ph]
 
-#%%
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, 
                                          epsilon=1e-07, amsgrad=False,name='Adam')
     #optimizer = tf.keras.optimizers.SGD(learning_rate=0.00001)
@@ -205,18 +227,6 @@ for i in [18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
     CentralFloquetE_RBM2    = np.zeros([N,2],      dtype = np.float64)
     CentralFloquetEVec_RBM2 = np.zeros([N,H.dim,2],dtype = np.complex128)
 
-
-    f = 1.0
-    loss_list = tf.Variable([],dtype=tf.float64)
-    #for i in [16]:#range(1):
-
-    delta = 1.7
-    Omega = 10.0*(i)/N 
-    phase = np.arctan(1.0)/4.1341341
-
-    #trained_parameters = model.trainable_variables
-    #model = Model.RBM_Model(delta,Omega,phase,trained_parameters_0)
-    #model = Model.RBM_Model(delta,Omega,phase)
     loss_value, grads = Model.grad_fun(model,Model.loss)
     print("Initial loss value (Floquet): ",loss_value.numpy())    
     
@@ -229,20 +239,6 @@ for i in [18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
     U_ = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
     plt.imshow(np.abs(U_.numpy()))
     plt.show()
-
-    #init_parameters = [f*model.W_n,f*model.b_n,f*model.c_n,f*model.W_ph,f*model.b_ph,f*model.c_ph]
-    
-    #test_parameters_ = init_parameters + trained_parameters_0 
-    
-    #model = Model.RBM_Model(delta,Omega,phase,test_parameters_)
-    #UF_0  = Model.Unitary_Matrix(model) 
-    
-    CentralFloquetE[i,0]      = tf.math.real(model.E_Floquet[0]).numpy()
-    CentralFloquetE[i,1]      = tf.math.real(model.E_Floquet[1]).numpy() 
-    CentralFloquetEVec[i,:,0] = model.U_Floquet[:,0].numpy()
-    CentralFloquetEVec[i,:,1] = model.U_Floquet[:,1].numpy()
-
-
 
     N_training = 18394
 

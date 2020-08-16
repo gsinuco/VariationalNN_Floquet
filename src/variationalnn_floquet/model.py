@@ -139,8 +139,8 @@ class RBM_Model(Hamiltonian,object):
     Hamiltonian.__init__(self,delta,Omega,phase)  
 
     # Initialize the spin value and number of floquet channels
-    self.hidden_n  = 16 # hidden neurons
-    self.hidden_ph = 32  # hidden neurons
+    self.hidden_n  = 8 # hidden neurons
+    self.hidden_ph = 16  # hidden neurons
 
 
     self.N_Floquet_UF = 10#self.N # Number of Floquet manifolds used to build the micromotion operator
@@ -521,12 +521,12 @@ def loss(model):
     #          
     #residual = tf.math.reduce_sum(tf.abs(U_diag-dotProd),0)
     #residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0) + 1.0*tf.math.abs(tf.linalg.trace(U_)) + tf.math.abs(tf.tensordot(U_diag,projection,axes=1))
+    #residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0)  #+   #tf.math.sqrt(tf.math.reduce_sum(tf.abs(U_diag-dotProd),0)) #+ tf.math.reduce_sum(tf.abs(U_diag),0)
 
 ############ DEFINITION OF A LOSS FUNCTION WITH THE CENTRAL SECTION OF THE #################
 ############ TRANSFORMED HAMILTONIAN    ####################################################
-    #index_  = model.N_Floquet_UF*model.S
-    #U_      = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF[:,index_:index_+model.S]
-    #eltos   = tf.constant([[model.N_Floquet_UF*model.S,0]],dtype=tf.int32)
+    #index_     = model.N_Floquet_UF*model.S
+    #U_         = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF[:,index_:index_+model.S]
     #for i in range(model.S-1):
     #    eltos = tf.concat([eltos,[[model.N_Floquet_UF*model.S+1+i,1+i]]],axis=0)    
     #U_diag   = tf.abs(tf.gather_nd(U_,eltos))
@@ -536,20 +536,16 @@ def loss(model):
 
 ########### DEFINITION OF A LOSS FUNCTION COMPARING THE TRANSFORMED VECTOR (BY H_TLS) ######
 ########### AGAINS ITSELF. BOTH SHOULD BE RELATED BY A SIMPLE SCALE ########################
-    #index_  = model.N_Floquet_UF*model.S
-    #U_      = model.H_TLS@UF[:,index_:index_+model.S]
-    #for i in range(U_.shape[1]): avoid the loop! 
-        # find element with maxima amplitude, index j_max
-        #tf.math.reduce_max(tf.abs(U_),axes=0)    i    
-        # evaluate the ratio lambda_i = U_[j_max,i]/UF[j_max,i]
-    #    tf.math.divide()
-        # evaluate UF_ = lambda_j * UF[:,j]
-        # evaluate the sum of the differences U_ - UF_
-    #U_diag   = tf.abs(tf.gather_nd(U_,eltos))
-    #residual = tf.math.reduce_sum(tf.math.sqrt(tf.abs(U_diag-dotProd)),0) #+     
-
-    
-    #tf.math.sqrt(tf.math.reduce_sum(tf.abs(U_diag-dotProd),0)) #+ tf.math.reduce_sum(tf.abs(U_diag),0)
+    #index_     = model.N_Floquet_UF*model.S
+    #U_         = model.H_TLS@UF[:,index_:index_+model.S]
+    #eltos_idx  = np.argmax(tf.abs(UF[:,index_:index_+model.S]).numpy(),axis=0)
+    #            #tf.math.argmax(tf.abs(UF[:,index_:index_+model.S]),axis=0)
+    #eltos_val  = np.max(UF[:,index_:index_+model.S].numpy(),axis=0)
+    #            #tf.math.reduce_max(UF[:,index_:index_+model.S],axis=0)
+    #lambda_    = tf.divide(tf.linalg.diag_part(tf.gather(U_,eltos_idx,axis=0)),
+    #                       eltos_val)
+    #U_test     = tf.divide(U_,lambda_)
+    #residual   = tf.reduce_sum(tf.abs(U_test - UF[:,index_:index_+model.S]))
     
     #U_ = tf.abs(tf.transpose(tf.math.conj(UF))@UF)
     #print(U_)
@@ -887,4 +883,55 @@ def phase(x):
     #    ph = np.pi
 
     return ph
-                    
+
+
+def save_RBM(file,**kwargs):
+    # model: class Model
+    # script params: a mixed arrasy
+    #                  script_params = ["""RWA Training: keras.optimizers.Adam(learning_rate=0.1, beta_1=0.9, beta_2=0.999,epsilon=1e-07, amsgrad=False,name='Adam')""",N_training, N_tr_ph, N_tr_rho,tf, """Matrix Diagonalisation: optimizer = tf.keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999,                                          epsilon=1e-07, amsgrad=False,name='Adam')""",N_training_matrix]  
+    # script_result = [model.trainable_variables,loss_value] 
+    #
+    #
+    model          = kwargs.get('Model',None)
+    script_params  = kwargs.get('Script_Params',None)
+    script_results = kwargs.get('Script_Results',None)
+
+
+    if(model != None):
+        file_ = open(file,'a')
+        model_params = [model.spin,model.omega_0,model.delta,model.omega,model.Omega,
+                       model.phase,model.S,model.N,model.dim,model.hidden_n,
+                       model.hidden_ph,model.N_Floquet_UF]
+        np.savetxt(file_,model_params)
+        file_.close()
+        return "done"
+    
+    
+    if(script_params != None):
+        file_ = open(file,'a')
+        file_.write(script_params)
+        file_.close()
+        return "done"
+
+    if(script_results != None):        
+        file_ = open(file,'a')
+        np.savetxt(file_,script_results[0])
+        np.savetxt(file_,script_results[1])
+        np.savetxt(file_,[script_results[2]])
+
+        #for i in range(script_results[0][0].shape[0]):
+        #    np.savetxt(file_,script_results[0][0][i,:])                    
+        #np.savetxt(file_,script_results[0][1][:])        
+        #np.savetxt(file_,script_results[0][2][:])                  
+        
+        #for i in range(script_results[0][3].shape[0]):
+        #    np.savetxt(file_,script_results[0][3][i,:])                    
+        #np.savetxt(file_,script_results[0][4][:])        
+        #np.savetxt(file_,script_results[0][4][:])        
+        
+        #np.savetxt(file_,[script_results[1]])        
+        
+        file_.close()
+        return "done"
+        
+     

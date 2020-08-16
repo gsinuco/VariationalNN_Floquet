@@ -1,0 +1,272 @@
+'\documentclass[pra,twocolumn,showkeys,preprintnumbers, amsmath,amssymb, aps,A4paper]{revtex4-1}
+
+\usepackage{amsmath}
+\usepackage{graphicx}% Include figure files
+\usepackage{dcolumn}% Align table columns on decimal point
+\usepackage{array}
+\usepackage{bm}% bold math
+\usepackage{fancyvrb}
+
+
+\newcommand{\ctu}{\cos(\theta_\uparrow)}
+
+
+\begin{document}
+
+%\preprint{SoftwareX/Elsevier}
+
+\title{Variational neural network parametrisation of the time-evolution operator of periodically driven quantum systems}
+
+\author{German A. Sinuco Leon}
+\affiliation{School of Mathematics and Physical Sciences, University of Sussex, Falmer, BN1 9QH, United Kingdom.}
+
+
+\date{\today}
+\begin{abstract}
+R.... .... The use of peridic drivings to manipulate the state and properties of a large class of physical systems can be manipulated using periodic perturbations. The descriptoin of periodically driven many-body quantum systems cannot be captured with simple perturbative expansion, and ), and accurate calculation of the time-evolution is required for experimental realisation of dynamical engineering regimes  or robust multquibit gates. Tools Artificial intellingece an machine learning has shown .. to study quntum mechincal staes, in particular to obtain a compressed represntation of the many-body wavefunction.  Here I focus on the use of a Restricted Boltzman Machine to parametrise the Floquet states of a two-level system harmonically driven. I explore the range of strong blue off-resonant driving with strengh varying from weak to strong. The requiured complexity of the RBM with the number of Floquet manifolds. I adapat the to obtain a the Floquet spectrum converges from an approximated solution the Rotating Wave Approximation at. The training of the RBM presens all the estandar challenges of neural network parametrisatoin: vanishing gradient. Combination of loss functions . These results demonstrate explicitly the capabilities and challenges  of RBM in describing harmonically driven systems.
+\end{abstract}
+
+%\pacs{Valid PACS appear here}% PACS, the Physics and Astronomy
+                             % Classification Scheme.
+ 
+\keywords{Periodic driving, Floquet engineering, Quantum dynamics, Dressed states, Restricted Boltzman Machine, Machine Learning, qubits, quantum gates.}
+                              %display desired
+\maketitle
+\section{\label{sec:Introduction} Introduction}
+
+
+quantify the expressive power of NN teher is a gap in the understanding .Well understood data sets may offer insight, such as statisticcal physics, manybody physic, tensor networks and renormalisation.
+
+
+Traininin the machine tmay reveal correlation in the data with physicalmeaning. these larning task.
+
+RBM can paarmetirze complex functions of visible units. 
+
+
+
+Wave functinos of many-body systema nd away from equilibrum
+
+RBM representations of topological states
+
+
+These development raise questions about the expressive powe  of NN for physial problmes. 
+can rbm efficiently descrb periodicallly driven dystems. directe relation with exact diagonalisation techniques.
+
+
+rbm can provide compatct representation for a highly entangled quatum states that does not satisfy the entanblement area., with a number of parameters scaling polynomially with the system size. 
+
+
+conclussion: general connectino between rbm and tns in arxiv 1701.04831 constitues a brid in usin uch tecniques for harmonically driven systems.
+
+.
+
+
+
+In the last decade 
+Periodically driven system are almost present in quantum mechanics. both theoreical and experimentally relevant. 
+drastica modification of physical systems, including spectral signals \cite{} , 
+out-ofpequilibrium states driven by harmonic forces, transformation of states in . Dynamical decoupling with periodic drivings (several harmonics as in the quantum coputing talk I saw), or multiquibe gates by multiple harmonci forces, to floque topological insulators and frequency/time-domain quantum simulations.
+
+The time-evolution operator is key, either to define the time-evolution or for defniniton of effective Hamiltonians. both of them cna be written interms of the Floquet states. Floquet states perturbatoin theory, RWA, Bloch-siegart, ... expansion.... All this approximaiton and general solution are important to uderststand, fore example. 
+
+
+ML representation of quantum states has been recently very active, showing ... . and compatibility with on-line l earnign and experimental realsiation, in partiuclar for the control of quantums states in quantum computing architectures .... control with floquet.... The reductin of the parametere required, reflection on the ... of the physically accessible states of the Hilbert space, corresponding to very restriced subste, which can be described efffecgively in nothe such as MPS, tensor Netowors.. Such a relatio nbetween ML and ... is currently an active area of research ..
+
+Hrmonically deriven systems can be in the ferquency space has the as a Hubbard model \cite{mine and othres}, and such that time-dependennt problem can be evaluated using toools of static systems \cite{}, which has not been explored sufficiently. Here I study the parametrisation of the Floquet operator using a RBM for the archetypical case of a driven qubit. The RBM is overkilling in this case,with other straight numerical diagonalisaiton of the Floquet Hamiltonian, however it allows to explore the capabilities of, which can be then applied to other more complex systems where exact diagonalisation or cannot be implemented so directly.
+
+The docume is as follows. In Section \ref{sec:FloquetHamiltonian} I present the representation of the time-evlutio operator in terms of Floquet states. In section \ref{sec:RBM}, presents the Restricted Boltzman Machine rerpesentatio of the states and the loss fucntions to evaluate the Floquet spectrum. Section \ref{sec:RBMFloquetStates} shows the representation of Floquet states using the RBM. The central result in presented in section \ref{sec:RBMFloquetSpecttrum}, where I discuss the evalation of the Floquet spectrum (eigenvectors and eigenvalues) evaluated using an RBM parametrisaiton. Discussion of the applcations are presented and conclusion are in sectino...
+
+
+\begin{figure}
+\centering
+\caption{\label{fig:SystemSketch} (a) Schematic energy level structure of a generic quantum system. The basis of states consist of a discrete set of energy states, which define several bands according to the level energy spacing. Inter and intra band coupling is induced by electromagnetic radiation tuned at the corresponding frequencies, as indicated by the coupling terms. The wide variety of physical systems described by this model includes (b) trapped ions \cite{PhysRevLett.117.220501}, (c) superconducting qubits \cite{vion2002manipulating} and (d) diamond NV-centres \cite{balasubramanian2009ultralong}.}
+\end{figure}
+
+
+\section{\label{sec:FloquetBloch} Floquet formalism}
+
+The Hamiltonian of a generic quantum system periodically driven is of the form:
+\begin{equation}
+H = \sum_{i,j}^D E_{i,j} \left| i\right\rangle \left\langle j \right| + \sum_{i,j}^D \sum_{n \in Z} V_{i,j}^{\ell,n} e^{i n \omega t} \left| i\right\rangle \left\langle j \right| + \textrm{h.c.}
+\label{eq:Hamiltonian}
+\end{equation}
+where $D$ is the dimension of the Hilbert space, ${E_{i,j}}$ defines the static component of the Hamiltonian, $V_{i,j}^{\ell,n}$ is the coupling between the states $i$ and $j$ oscillating at frequency $n \omega$ (i.e. the $n$-th harmonic of the fundamental frequency $\omega$).
+
+To calculate the time-evolution operator we can generalise the Rotating (or Resonant) Wave Approximation (RWA), taking into account the complex time dependence of eq. (\ref{eq:Hamiltonian}). For this, we search for a unitary transformation, $U_F(t)$, to the frame of reference where the Hamiltionian is \textit{time-independent} and diagonal, $\bar{H}$. With such transformation, we can build the time-evolution operator using:
+Importantly, in the basis of states defined by this transformation the time evolution operator is diagonal and has the form:
+\begin{equation}
+\bar{U}(t',t) = \sum_{\bar{i}} e^{-i \bar{E}_{\bar{i}} (t'-t)} \left| \bar{i} \right\rangle \left\langle \bar{i} \right|
+\label{eq:dressedtimeevolution}
+\end{equation}
+
+
+
+The required transformation operator $U_F(t)$ as a Fourier series \cite{ho1983semiclassical}:
+\begin{equation}
+U_F(t) = \sum_{n\in Z} U_{i,\bar{i}}^{n} e^{-in\omega t} \left| i \right\rangle \left\langle \bar{i} \right|
+\label{eq:micromotionexpansion}
+\end{equation}
+
+Using this expansion, the transformed Hamiltonian 
+\begin{eqnarray}
+ U_F^\dagger(t) \left[ H(t) - i \hbar \partial_t \right] U_F(t)  &=& \sum_{\bar{i}} \bar{E}_{\bar{i}} \left| \bar{i} \right\rangle \left\langle \bar{i} \right|
+\label{eq:Hdressed}
+\end{eqnarray}
+where $\bar{E}_{\bar{i}}$ with $\bar{i} \in [1,D]$ is the set of eigenstates in the frame of refence where the Hamiltonian is static.
+
+which let us to calculate the time evolution operator in the original basis $\left\{ \left| i\right\rangle\right\}$, just by inverting the transformation $U_F(t)$, according to \cite{PhysRevA.81.063626}:
+\begin{equation}
+U(t',t) = U_F(t') \bar{U}(t',t) U_F(t)
+\label{eq:baretimeevolution}
+\end{equation}
+
+\begin{widetext}
+\begin{equation}
+\sum_j(E_{i,j} - \hbar n \omega)U^{n}_{j,\bar{i}} + \sum_{j} \sum_{m} \left[ V^{m}_{i,j} U^{n+m}}_{j,\bar{i}} + V^{m*}_{ji} U^{m-n}_{j,\bar{i}}\right] = \bar{E}_{\bar{i}}U^{n}_{i,\bar{i}}
+\label{eq:multimodeeigenproblem}
+\end{equation}
+\end{widetext}
+where the couplings $V_{i,j}^{\ell,n}$ define $V_{i,j}^{\vec{n}}$ and the vector $\vec{n} = (0,\ldots , m, \ldots, 0)$ with the value $m$ located at the $\ell-$th position. To obtain a finite matrix representation of this problem we truncate the sum over the number of modes of the Fourier expansion eq. (\ref{eq:micromotionexpansion}). Below, in Appendix A, we show an specific example of the shape of the matrix for a bichromatic driven problem. 
+
+This formulation to calculate the time-evolution operator is equivalent to the multimode Floquet representation of the Hamiltonian that introduces the extended Hilbert space $\left| E_i,\vec{n} \right\rangle$  \cite{shirley1965solution,ho1983semiclassical,verdeny2016quasi}. However, the semiclassical description presented here makes emphasis in the experimentally accessible states, which usually are used to express the static part of the Hamiltonian eq.  (\ref{eq:Hamiltonian}). 
+
+In this paper we consider the Hamiltonian of quaibit system:
+
+\begin{equation}
+H = \hbar \omega_0 S_z + \hbar \Omega S_x \cos (\omega t + \phi)
+\end{equation}
+
+
+\begin{widetext}
+\[
+\mathcal{H} = \begin{pmatrix}
+ H_0 + 3 \hbar \omega & V & 0 & 0 & 0 & 0 &0 \\
+  V^{1,1\dagger} & H_0 + 2 \hbar  \omega & V & 0 & 0 & 0 & 0 \\
+ 0 &  V^{1,1\dagger} & H_0 + \hbar \omega & V & 0 & 0 & 0 \\
+ 0 & 0 &  V^{1,1 \dagger} & H_0  & V  & 0 & 0  \\
+ 0 & 0 & 0 &  V^{1,1 \dagger} & H_0 - \hbar \omega & V &0   \\
+ 0 & 0 & 0 & 0 &  V^{1,1 \dagger} & H_0 - 2 \hbar \omega & V \\
+ 0 & 0 & 0 & 0 & 0  &  V^{1,1 \dagger} & H_0 - 3 \hbar \omega 
+\end{pmatrix}
+\]
+
+In the regime of off-resonant + weak-to-strong driving. More precisely, my numerical results are obtained for the parameters $\omega=1.7 \omega_0$ and a Rabi frequency $\Omega \in \[0,10\]\times \omega_0$. Figure presents the energy gap between the dressed states as a function of the Rabi frequency $\Omega$  and the eigen states of selected parameters.  
+
+The wavefucntion has the symmetry:
+\begin{equaiton}
+some symmetry
+\end{equation}
+which is used to reduce the number of paramerter below.
+
+\section{RBM parametrisation of the micromotion operator}
+
+Any wavefumction of the form:
+\begin{equation}
+\left| \bar{i} \right\rangle = \sum_{j,n} u^{n}_{j,\bar{i}} e^{i n \omega t}\left|j \right\rangle
+\end{equation}
+
+The coefficients of the expansion can be parametrised using:
+\begin{equation}
+u^{n}_{j,\bar{i}} = \sqrt{\frac{P_{\lambda}(\boldsymbol{\sigma})}{Z}} \exp(\phi_{\mu}(\boldsymbol{\sigma}))
+\end{equation}
+where
+\begin{equation}
+P_{\kappa}(\boldsymbol{\sigma}) = \sum_{\{\boldsymbol{h}\}} p_{\kappa}(\boldsymbol{\sigma},\boldsymbol{h})
+\end{equation}
+with 
+\begin{equation}
+p_{\kappa}(\boldsymbol{\sigma},\boldsymbol{h}) = \exp (\boldsymbol{b}_{\boldsymbol{\sigma}} \cdot \boldsymbol{\sigma} + \boldsymbol{c}_{\boldsymbol{h}} \cdot \boldsymbol{h} + \boldsymbol{h}^T \cdot W_{\boldsymbol{h},\boldsymbol{\sigma}} \cdot \boldsymbol{\sigma})
+\end{equation}
+for $\kappa={\lambda}$ and $\mu$.
+
+In case of the Floquet states, the label $\boldsymbol{\sigma}=$. 
+
+The marginal probabilities can be written:
+\begin{equation}
+P_{\kappa}(\boldsymbol{\sigma}) = \exp(\boldsymbol{b}_{\boldsymbol{\sigma}}\cdot\boldsymbol{\sigma}) \prod_{j=1}^{h} \cosh(\boldsymbol{c}_j+ \boldsymbol{W}_j\cdot\boldsymbol{\sigma})
+\end{equation}
+
+training the parameters of the two RBM, using. Here we resetric to simple ools avialbalt in .. .
+
+\section{\label{sec:RBMFloquetStates} RBM parametrisation of Floquet states} 
+
+The numerically exact Floquet states (the fourier coeffiecients of expansion....) straigh forward by diagonalisin eq \cite{mi, floquet}.
+
+teh Kull-lll loss function:
+\begin{equaiton}
+k = \sum_i p_i \log \frac{p_i}{p_i}
+\end{equation}
+
+The training starts of wit a random distribution of all parameters with choosen as ..to train both RBm parametrisation of the amplitude and the phase, I loop swapping one, starting of a random initiailization of the RBM parameters. The parameers of the amplitude are choosen as randon, while 
+
+Typical training problems and parameters. Accuracy. 
+
+
+
+\section{\label{sec:RBMFloquetSpectrum} Evaluating the Floquet spectrum using aRBM}
+
+Finding the full spectrum of quasienergies and the .
+
+As an initial guess for the parameters, we train the RBM to fit the RWA, which can be evluated in . The second is the definition of a loss fucntion. IN this case we wnat a that the matrix ooperion... lead to a diagnonal form .we define distance as the difference between the of the values with the correponding diagonal elelmemtn. The training of this ..  shown in ...
+
+As a second form of the loss function is a quantification of the diffenece between the lefhs vectors and the initila vectors. They should only differr in the scale, such . the candidate eigenvalue is chooslen as teh ratio between ... and .... Then we evaluate the difference.  The traiing .. suffer similar difficulties taking a long number of steps and requrieing a small loss rate. 
+
+
+Combination of the two loss functions during traingin in a randomly between loss functions. We observe a spped up of the traiing, improve of the fidelity with the esxac, as well an improvment of the numerically exact Floquet spectrum.
+
+
+
+
+\section{\label{sec:discussion} Discussion}
+
+Loss function with slow learning. Investigation in better loss function as well as dragging tools from ML to speep up .. 
+
+The difficutly of training consittues a tool for charactersing physicsl system as ... . Hre we have observed that complex wavefuntion rquire more traiing effort. application for example to floque driven systems.
+
+Applicaton for evaluating the longtime evluation. nitial guess functions to improve convegencey. COnversely, the training wave functin and the distribution/correlation of the coefficients correlated with othe critier of the system..
+
+The application of symmetries an boundary coditions to the floquet states. Also, this can be readly extended to multimode scaling of multimodedriven system (with unconmensurable frequencies).
+ 
+
+
+RBM parametrisation fits any function.
+
+Floquet states requiring more Fourier components are harder to train.
+
+several ways to define a loss function.
+
+Slow gradident
+
+random selection of criteria similar to ensemble learning
+
+the RWA approximation is a good start generically and evolvs towards the solution. sppeding up the  convergence ML .
+
+More interesting is the constuction of the iniital guess and restriction of the solutions explored, for example that the amplitude of Floquet manifolds should be small.
+
+here we explored the RBM parametrisation to build the micromotion operator. Other parameteisation  can be more efficient for optimisation. Such construction of the initial guess and constrains can be come from using Tensor Networks parametrisation, or ... 
+
+
+\section{Conclussion}
+In this paper we present a premier explorative study of the use of RBM for the parametriation of Floquet operators, in an archetypical periodically driven system. We obtain that trining of the can be done , which is equivalent to the experimentally demonstrated in .. .with online learning of the wavefunction.
+
+The evaluation of the Floquet spectrum is a mor difficult task. he initial guess guides the minimun of th e defined loss function. simple definitos vse on the prpertis of a diaognal matris and present low grdients .  combination of loss funciton sa better, reflection on the ensemble learning combination fo other simple archigecture of the wave fucntion, eg a NN can led to for more comple systems tahtn the studeid here. 
+
+In this work we present a initial exploration of using RBM for Floqeut problems. the Floquet states staes can be parametrised efficiently following similar approches, even with an altenative fitting of the complex and the wavefunction amplitude. this task can be qualified as easy, rapid from random distributon. 
+
+Finding the Floquet sates is a harder task. using as initial guess the RWA training . the function has a slow after a fast decline. however a combination of loss funcitons satisfied by any dagnonal matrix  or the eigne vectors helps to guide the search. configuraiotn.. . Perhaps a different . The micromotion operator is the time-evolution operator, then other ML architehqure mighth present better. Also
+
+This starting point for exploratioon of the use of parametrisatio for more complex ...like .. .  The numerical effor for the case studied here is overkilling, however we explore typical taht might be present in other driven quantum systems. 
+
+
+
+\bibliography{LibraryBib}
+
+
+\section*{Acknowledgements}
+We acknowledge fruitful comments and input from Dr. Juan Sebastian Totero Gongora. This work has been supported by the School of Mathematics and Physics of the University of Sussex.
+
+\section*{Appendix A: Restriced Boltzman Machine parametrisation of $u^n_{j,\bar{i}}$}
+\section*{Appendix B: Typical and no so typical training results}
+\section*{Appendix A: Typical example of the matrix representation of the multimode Hamiltonian}
+
+\end{document}

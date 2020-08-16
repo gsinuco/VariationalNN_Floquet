@@ -6,8 +6,7 @@ Created on Mon Apr 27 10:08:10 2020
 @author: german
 """
 
-def RMB_training_Psi(H,loss_psi,loss_psi_phase):
-
+def RMB_training_Psi(N,H,loss_psi,loss_psi_phase):
     
     import tensorflow as tf
     import numpy as np
@@ -15,107 +14,40 @@ def RMB_training_Psi(H,loss_psi,loss_psi_phase):
     ############### IMPORT WHAT WE NEED FROM THIS PROJECT #####################
     import model as Model
 
-    CentralFloquetE_RBM    = np.zeros([2],dtype=np.float64)
-    CentralFloquetEVec_RBM = np.zeros([H.dim,2],dtype=np.complex128)
-
     loss_list_RWA          = tf.Variable([],dtype=tf.float64)
 
-    
-    N_training = 64
+    N_training = N
     N_tr_ph    = 2
     N_tr_rho   = 2
-
-    
-    #delta = 1.7
-    #Omega = 10.0*i/N
-    #phase = np.arctan(1.0)/4.1341341
-    
-    #print(i,H.delta,H.Omega,H.phase)
 
 ########## TRAINING AGAINST THE RWA #######################################
 ########## TO OBTAIN AN INITIAL SET RBM PARAMETERS ########################
 ########## THIS IS EQUIVALENT TO RECONSTRUCT A SET OF WAVE FUNCTIONS ######
  
-
     model = Model.RBM_Model(H.delta,H.Omega,H.phase)
     
-    #CentralFloquetEVec[:,0] = model.U_Floquet[:,0].numpy()
-    #CentralFloquetEVec[:,1] = model.U_Floquet[:,1].numpy()
-    #CentralFloquetE[0]      = tf.math.real(model.E_Floquet[0]).numpy()
-    #CentralFloquetE[1]      = tf.math.real(model.E_Floquet[1]).numpy() 
-
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.1, beta_1=0.9, beta_2=0.999, 
                                      epsilon=1e-07, amsgrad=False,name='Adam')
     #optimizer = tf.keras.optimizers.SGD(learning_rate=0.1)
-
 
     for j in range(N_training):
 
         # Fit the norm        
         for i_ in range(N_tr_rho):
-            #loss_value, grads = Model.grad_fun(model,Model.loss_Psi_rho)
-            #loss_value, grads = Model.grad_fun(model,Model.loss_RWA)
             loss_value, grads = Model.grad_fun(model,loss_psi)
-            #loss_value, grads = Model.grad_fun(model,Model.loss_Floquet)
             loss_list_RWA = tf.concat([loss_list_RWA,[loss_value.numpy()]],axis=0)
-            #optimizer.apply_gradients(zip(grads, model.trainable_variables))
             optimizer.apply_gradients(zip(grads[0:3], model.trainable_variables[0:3]))
 
         # Fit the phase
         for i_ in range(N_tr_ph):
-            #loss_value, grads = Model.grad_Phase(model,Model.loss_Psi_Phase)
-            #loss_value, grads = Model.grad_Phase(model,Model.loss_RWA_Phase)
             loss_value, grads = Model.grad_Phase(model,loss_psi_phase)
-            #loss_value, grads = Model.grad_Phase(model,Model.loss_Floquet_Phase)
             loss_list_RWA = tf.concat([loss_list_RWA,[loss_value.numpy()]],axis=0)
             optimizer.apply_gradients(zip(grads, model.trainable_variables[3:6]))
-
-
-    # Modelling the phase distribution (0,pi) as a neural network
-    # x = model.x[1:133,:].numpy()
-    # y = tf.math.sign(tf.math.real(tf.reshape(model.U_Floquet,[2*model.dim]))).numpy() 
-    # NNmodel, score  = NN_Model.NN_model(x,y)
-
-    #UF = Model.Unitary_Matrix(model) 
-    #print("Hamiltonian in the dressed basis (RBM parametrisation): ")    
-    #U_ = tf.transpose(tf.math.conj(UF))@model.H_TLS@UF
-    #print(U_)
-
-    #if (UF.shape[1] > model.S):
-    #    index_ = int(model.S*((UF.shape[1]/model.S -1))/2)
-    #else:   
-    #    index_ = 0
-        
-    #CentralFloquetEVec_RBM[:,0] = UF[:,index_  ].numpy()
-    #CentralFloquetEVec_RBM[:,1] = UF[:,index_+1].numpy()
-    #CentralFloquetE_RBM[0] = tf.math.real(U_[index_     , index_    ]).numpy()
-    #CentralFloquetE_RBM[1] = tf.math.real(U_[index_ + 1 , index_ + 1]).numpy() 
-
-
-    #print("Hamiltonian in the dressed basis (Floquet): ")    
-    #U_ = tf.math.real(tf.transpose(tf.math.conj(model.U_Floquet))@model.H_TLS@model.U_Floquet)
-    #print(U_)
-    
-    
-    #np.savetxt(file, [model.delta,model.Omega,model.phase])
-    #np.savetxt(file, [model.hidden_n,model.hidden_ph])
-    #np.savetxt(file, [N_training ,N_tr_ph, N_tr_rho])
-    #np.savetxt(file, [model.W_n.numpy()])
-    #np.savetxt(file, [model.b_n.numpy()])
-    #np.savetxt(file, [model.c_n.numpy()])
-    #np.savetxt(file, [model.W_ph.numpy()])
-    #np.savetxt(file, [model.b_ph.numpy()])
-    #np.savetxt(file, [model.c_ph.numpy()])
-    #np.savetxt(file, [model.U_Floquet.numpy()])
-    #np.savetxt(file, [model.E_Floquet.numpy()])
-    #np.savetxt(file, [CentralFloquetEVec_RBM[i,:,:]])
-    #np.savetxt(file, [CentralFloquetE_RBM])
-    
 
     return model.trainable_variables,loss_list_RWA
 
 
-def RBM_training_FloquetStates(N_training = 4,H):
+def RBM_training_FloquetStates(N_training,H):
 ####################################################################
 ####### FINDING THE FLOQUET OPERATOR TRAINING A RBM   ##############
 ####################################################################
@@ -123,11 +55,15 @@ def RBM_training_FloquetStates(N_training = 4,H):
     #trained_parameters_0 = [model.W_n,model.b_n,model.c_n,model.W_ph,model.b_ph,model.c_ph]
 
 #%%
+    import tensorflow as tf
+    import numpy as np
 
     ############### IMPORT WHAT WE NEED FROM THIS PROJECT #####################
     import model as Model
     import matrixmanipulation as mp
     import NN_model as NN_Model
+    import matplotlib.pyplot as plt
+
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, 
                                          epsilon=1e-07, amsgrad=False,name='Adam')
@@ -150,10 +86,15 @@ def RBM_training_FloquetStates(N_training = 4,H):
     #model = Model.RBM_Model(delta,Omega,phase,trained_parameters_0)
     #model = Model.RBM_Model(H.delta,H.Omega,H.phase)
     #trained_parameters_0 = RMB_training_Psi(H,Model.loss_RWA,Model.loss_RWA_Phase)
-    model = Model.RBM_Model(delta,Omega,phase,trained_parameters_0)
+    N = 4 # weak training against the RWA
+    trained_parameters,loss_history = RMB_training_Psi(N_training,H,
+                                                      Model.loss_RWA,
+                                                      Model.loss_RWA_Phase)
+
+    model = Model.RBM_Model(H.delta,H.Omega,H.phase,trained_parameters)
     
     loss_value, grads = Model.grad_fun(model,Model.loss)
-    print("Initial loss value (Floquet): ",loss_value.numpy())    
+    print("Initial loss value using an loosse fit to the RWA: ",loss_value.numpy())    
     
     UF = Model.Unitary_Matrix(model) 
 
