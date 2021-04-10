@@ -857,30 +857,39 @@ def grad_Phase(model,loss_fun):
 
 def Rect2Pol(x):
     
-    ph  = phase(x)
+    pol = np.zeros([x.shape[0],2],dtype=np.double)
+    ph  = phase(x) 
     rho = np.abs(x)
-    return rho,ph
+    
+    if rho.ndim == 2:
+        pol[:,0] = rho[:,0]
+        pol[:,1] = ph[:,0]
+    if rho.ndim == 1:
+        pol[:,0] = rho
+        pol[:,1] = ph
+    
+    return pol#rho,ph
          
 
 def phase(x):
     ph =np.arctan(np.abs(np.imag(x)/np.real(x)))
-    #A  = np.real(x)
-    #B  = np.imag(x)
-    #if((A>0).all() & (B<0).all()):
-    #    ph = ph + 2.0*np.pi
-    #if((A<0).all() & (B>0).all()):
-    #    ph = -ph + np.pi
-    #if((A<0).all() & (B<0).all()):
-    #    ph =  ph + np.pi
-    #if((A==0).all() &(B>0).all()):
-    #    ph = 0.0
-    #if((A==0).all() &(B<0).all()):        
-    #    ph = np.pi
-    #if((B==0).all() & (np.sign(A)>0).all()):
-    #    ph = 0.0
-    #if((B==0).all() & (np.sign(A)<0).all()):
-    #    print("me")
-    #    ph = np.pi
+    A  = np.real(x)
+    B  = np.imag(x)
+    if((A>0).all() & (B<0).all()):
+        ph = ph + 2.0*np.pi
+    if((A<0).all() & (B>0).all()):
+        ph = -ph + np.pi
+    if((A<0).all() & (B<0).all()):
+        ph =  ph + np.pi
+    if((A==0).all() &(B>0).all()):
+        ph = 0.0
+    if((A==0).all() &(B<0).all()):        
+        ph = np.pi
+    if((B==0).all() & (np.sign(A)>0).all()):
+        ph = 0.0
+    if((B==0).all() & (np.sign(A)<0).all()):
+        print("me")
+        ph = np.pi
 
     return ph
 

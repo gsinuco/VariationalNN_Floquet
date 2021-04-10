@@ -30,8 +30,8 @@
 
 \title{Variational neural network parametrisation of the micromotion operator of periodically driven quantum systems}
 
-%%\author{German A. Sinuco Leon}
-%%\affiliation{School of Mathematics and Physical Sciences, University of Sussex, Falmer, BN1 9QH, United Kingdom.}
+\author{German A. Sinuco Leon}
+\affiliation{Deparment of Chemistry, Durham University, Durham, United Kingdom.}
 
 
 \date{\today}
@@ -230,6 +230,13 @@ The training starts of wit a random distribution of all parameters with choosen 
 Typical training problems and parameters. Accuracy. 
 
 
+\begin{figure*}
+\centering
+\includegraphics[width=\textwidth]{FloquetvsRBM_Floquet1st.eps}
+\includegraphics[width=\textwidth]{FloquetvsRBM_Floquet2nd.eps}
+\includegraphics[width=\textwidth]{FloquetvsRBM_Floquet3rd.eps}
+\caption{\label{fig:FloquetFitRBM} Wavefunction of floquet states in the expanded space corresponding to the coefficients $u^{n}_{i,h}$ in Eq. (). The column on the left (panels (a),(d) and (e)) show the mangiuted and phase of the fitted wave funciton with the RBM. For comparison, the panels in the central column ((b),(e) and (h)) wshow the numerically exact calculation . The column on the right . In all cases we consider a two-level system driven by a frequency annd with strenght $\Omega=$, corresponding to the first, second and last rows, respectively}
+\end{figure*}
 
 
 \section{\label{sec:RBMFloquetSpectrum} Floquet spectrum and micromotion}
@@ -244,6 +251,13 @@ As a second form of the loss function is a quantification of the diffenece betwe
 Combination of the two loss functions during traingin in a randomly between loss functions. We observe a spped up of the traiing, improve of the fidelity with the esxac, as well an improvment of the numerically exact Floquet spectrum.
 
 
+\begin{figure}
+\centering
+\includegraphics[width=0.5\textwidth]{EnergyError.eps}
+\includegraphics[width=0.5\textwidth]{Fidelity.eps}
+\includegraphics[width=0.5\textwidth]{LossInitFinal.eps}
+\caption{\label{fig:MicromotionResults} Ensemble average of the RBM performance to fit the micromotion operator of a driven qubit as function of the driving amplitude. (a) The average error in the energy computation (b) Average fidelity of the RBM parametrized dressed states with respect to the numerically exact Floquet states. (c) Initial and final values of the loss function $\Gamma$ defined in . The points represent average over 24 .. of the RBM, with the bars the standard deviation. }
+\end{figure}
 
 
 \section{\label{sec:discussion} Discussion}

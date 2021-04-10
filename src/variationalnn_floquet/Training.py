@@ -35,14 +35,16 @@ def RMB_training_Psi(N,H,loss_psi,loss_psi_phase):
         # Fit the norm        
         for i_ in range(N_tr_rho):
             loss_value, grads = Model.grad_fun(model,loss_psi)
-            loss_list_RWA = tf.concat([loss_list_RWA,[loss_value.numpy()]],axis=0)
+            #loss_list_RWA = tf.concat([loss_list_RWA,[loss_value.numpy()]],axis=0)
             optimizer.apply_gradients(zip(grads[0:3], model.trainable_variables[0:3]))
 
         # Fit the phase
         for i_ in range(N_tr_ph):
             loss_value, grads = Model.grad_Phase(model,loss_psi_phase)
-            loss_list_RWA = tf.concat([loss_list_RWA,[loss_value.numpy()]],axis=0)
+            #loss_list_RWA = tf.concat([loss_list_RWA,[loss_value.numpy()]],axis=0)
             optimizer.apply_gradients(zip(grads, model.trainable_variables[3:6]))
+
+        loss_list_RWA = tf.concat([loss_list_RWA,[loss_value.numpy()]],axis=0)
 
     return model.trainable_variables,loss_list_RWA
 

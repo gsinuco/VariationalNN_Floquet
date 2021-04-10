@@ -51,6 +51,8 @@ N = 32
 #CentralFloquetEVec_RBM = np.zeros([N,H.dim,2],dtype=np.complex128)
 
 
+
+
 N_training_RWA    = 4
 N_training_Matrix = 18394
 N_tr_ph           = 2

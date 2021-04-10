@@ -63,7 +63,10 @@ optimizer = tf.keras.optimizers.Adam(learning_rate=0.1, beta_1=0.9, beta_2=0.999
                                      epsilon=1e-07, amsgrad=False,name='Adam')
 #optimizer = tf.keras.optimizers.SGD(learning_rate=0.1)
 #%%
-for i in [16,18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
+
+file_psi = open('absPsi_comparison_Floquet_3D.dat','w')
+
+for i in [4,16,31]:#[16,18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
         
     delta = 1.7
     Omega = 10.0*i/N
@@ -99,6 +102,26 @@ for i in [16,18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
     CentralFloquetE_RBM[i,0] = tf.math.real(U_[index_     , index_    ]).numpy()
     CentralFloquetE_RBM[i,1] = tf.math.real(U_[index_ + 1 , index_ + 1]).numpy() 
 
+
+    absPsi_comparison         = np.zeros([UF.shape[0],11],dtype=np.double)
+    absPsi_comparison[:,0]    = np.linspace(0,UF.shape[0]-1,UF.shape[0],dtype=np.int)
+    absPsi_comparison[:,1]    = np.mod(np.linspace(0,UF.shape[0]-1,UF.shape[0],dtype=np.int),2) - 0.5
+    absPsi_comparison[:,2]    = absPsi_comparison[:,0]//2 - 16
+    absPsi_comparison[:,3:5]  = Model.Rect2Pol(UF[:,model.N_Floquet_UF*model.S:model.N_Floquet_UF*model.S+1])
+    absPsi_comparison[:,5:7]  = Model.Rect2Pol(UF[:,model.N_Floquet_UF*model.S+1:model.N_Floquet_UF*model.S+2])
+    aux = np.zeros([66,1],dtype=np.complex)
+    aux[:,0] = model.U_Floquet[:,0]
+    absPsi_comparison[:,7:9]  = Model.Rect2Pol(aux)
+    aux[:,0] = model.U_Floquet[:,1]
+    absPsi_comparison[:,9:11] = Model.Rect2Pol(aux)
+    np.savetxt(file_psi,absPsi_comparison)
+    file_psi.write("\n\n")
+    np.savetxt(file_psi,loss_history)
+    file_psi.write("\n\n")
+
+    plt.plot(loss_history)
+    plt.show()
+    
     plt.plot(np.abs(UF[:,model.N_Floquet_UF*model.S:model.N_Floquet_UF*model.S+2]))
     plt.show()
 
@@ -107,6 +130,8 @@ for i in [16,18]:#:,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32]:#range(N):
 
     plt.imshow(np.abs(U_.numpy()))
     plt.show()
+    
+file_psi.close()
     
 
     
